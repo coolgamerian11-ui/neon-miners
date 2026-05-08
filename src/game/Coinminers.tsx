@@ -111,10 +111,10 @@ export function Coinminers() {
   const currentFacility = FACILITIES.find(f => f.id === facility)!;
 
   return (
-    <div className="relative h-screen w-screen overflow-hidden text-foreground"
+    <div className="relative min-h-screen w-screen overflow-x-hidden text-foreground flex flex-col"
       style={{ background: "radial-gradient(ellipse at center top, #1a1828, #0a0a12 70%)" }}>
       {/* Top HUD bar */}
-      <header className="relative z-30 h-14 flex items-stretch border-b border-[color:var(--metal-light)]"
+      <header className="relative z-30 flex items-stretch flex-wrap border-b border-[color:var(--metal-light)] shrink-0"
         style={{ background: "linear-gradient(180deg, #1a1a25, #0c0c14)" }}>
         {/* Logo */}
         <div className="flex items-center gap-2 px-4 border-r border-[color:var(--metal-light)] min-w-[200px]">
@@ -165,19 +165,19 @@ export function Coinminers() {
       </header>
 
       {/* Body */}
-      <div className="flex" style={{ height: "calc(100vh - 56px - 28px)" }}>
+      <div className="flex flex-col lg:flex-row flex-1 min-h-0">
         {/* Sidebar */}
-        <aside className="w-[180px] flex flex-col gap-1 p-2 border-r border-[color:var(--metal-light)]"
+        <aside className="w-full lg:w-[180px] flex lg:flex-col gap-1 p-2 border-b lg:border-b-0 lg:border-r border-[color:var(--metal-light)] overflow-x-auto cyber-scroll shrink-0"
           style={{ background: "linear-gradient(180deg, #14141d, #0a0a12)" }}>
           {SIDEBAR.map(s => (
             <button key={s.id}
               onClick={() => setTab(s.id)}
-              className={`btn-cyber ${tab === s.id ? "active" : ""} text-left px-3 py-2 font-pixel text-[10px] flex items-center gap-2 rounded-sm`}>
+              className={`btn-cyber ${tab === s.id ? "active" : ""} text-left px-3 py-2 font-pixel text-[10px] flex items-center gap-2 rounded-sm shrink-0 whitespace-nowrap`}>
               <span className="text-base leading-none w-5">{s.icon}</span>
               <span>{s.label}</span>
             </button>
           ))}
-          <div className="mt-auto metal-panel p-2 text-[10px]">
+          <div className="hidden lg:block mt-auto metal-panel p-2 text-[10px]">
             <div className="font-pixel text-neon-cyan mb-1">FACILITY</div>
             <div className="font-mono-pixel text-base text-neon-orange">{currentFacility.name}</div>
             <div className="font-mono-pixel text-muted-foreground">cap {owned.length}/{currentFacility.capacity}</div>
@@ -185,25 +185,29 @@ export function Coinminers() {
         </aside>
 
         {/* Center scene */}
-        <main className="flex-1 p-3 min-w-0 relative">
+        <main className="flex-1 p-3 min-w-0 relative min-h-[420px] lg:min-h-0">
           <RoomScene owned={owned} hashrate={stats.finalHash} heat={stats.finalHeat} />
         </main>
 
         {/* Right shop / panel */}
-        <aside className="w-[360px] border-l border-[color:var(--metal-light)] overflow-y-auto cyber-scroll"
+        <aside className="w-full lg:w-[360px] border-t lg:border-t-0 lg:border-l border-[color:var(--metal-light)] overflow-y-auto cyber-scroll max-h-[60vh] lg:max-h-none"
           style={{ background: "linear-gradient(180deg, #14141d, #0a0a12)" }}>
           {tab === "upgrades" ? (
             <UpgradePanel btc={btc} levels={upgrades} onBuy={buyUpgrade} />
           ) : tab === "facilities" ? (
             <FacilityPanel btc={btc} current={facility} onPick={setFacility} />
-          ) : (
+          ) : tab === "gpus" ? (
+            <InventoryPanel owned={owned} />
+          ) : tab === "shop" || tab === "home" ? (
             <ShopPanel btc={btc} onBuy={buyGpu} />
+          ) : (
+            <ComingSoonPanel name={SIDEBAR.find(s => s.id === tab)?.label ?? "Section"} />
           )}
         </aside>
       </div>
 
       {/* Bottom HUD */}
-      <div className="h-7 border-t border-[color:var(--metal-light)] flex items-center px-3 gap-4 text-[12px] font-mono-pixel"
+      <div className="h-7 border-t border-[color:var(--metal-light)] flex items-center px-3 gap-4 text-[12px] font-mono-pixel overflow-x-auto whitespace-nowrap shrink-0"
         style={{ background: "linear-gradient(180deg, #0c0c14, #06060a)" }}>
         <span className="text-neon-green">● ONLINE</span>
         <span className="text-muted-foreground">|</span>
@@ -365,6 +369,83 @@ function FacilityPanel({ btc, current, onPick }: { btc: number; current: string;
           </button>
         );
       })}
+    </div>
+  );
+}
+
+function InventoryPanel({ owned }: { owned: OwnedGpu[] }) {
+  // Group owned GPUs into shelves of 4
+  const shelves: OwnedGpu[][] = [];
+  for (let i = 0; i < owned.length; i += 4) shelves.push(owned.slice(i, i + 4));
+  if (shelves.length === 0) shelves.push([]);
+  return (
+    <div className="p-3 space-y-3">
+      <div className="flex items-center justify-between">
+        <h2 className="font-pixel text-[11px] text-neon-green">▦ GPU INVENTORY</h2>
+        <span className="font-mono-pixel text-[12px] text-muted-foreground">{owned.length} units</span>
+      </div>
+      {shelves.map((row, ri) => (
+        <div key={ri} className="relative">
+          <div className="metal-panel p-2">
+            <div className="flex items-center justify-between mb-1">
+              <span className="font-pixel text-[9px] text-neon-cyan">SHELF {String(ri + 1).padStart(2, "0")}</span>
+              <span className="font-mono-pixel text-[11px] text-muted-foreground">{row.length}/4</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {Array.from({ length: 4 }).map((_, i) => {
+                const g = row[i];
+                const m = g ? GPU_MODELS.find(x => x.id === g.modelId) : null;
+                return (
+                  <div key={i} className="relative h-[78px] flex items-center justify-center"
+                    style={{
+                      background: "linear-gradient(180deg, #0c0c12, #050507)",
+                      border: "1px solid var(--metal-dark)",
+                      boxShadow: "inset 0 0 8px black",
+                    }}>
+                    {m ? (
+                      <div style={{ transform: "scale(0.72)" }}>
+                        <PixelGpu model={m} idx={ri * 4 + i} />
+                      </div>
+                    ) : (
+                      <div className="font-pixel text-[8px] text-neon-cyan/40">EMPTY</div>
+                    )}
+                    {m && (
+                      <div className="absolute bottom-0 left-0 right-0 px-1 py-0.5 font-mono-pixel text-[10px]"
+                        style={{ background: "rgba(0,0,0,0.7)", color: "var(--neon-cyan)" }}>
+                        {m.name.split(" ")[0]}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+          {/* shelf plank */}
+          <div className="h-2 mx-1 -mt-px"
+            style={{
+              background: "linear-gradient(180deg, var(--metal-light), var(--metal-mid) 40%, #000)",
+              boxShadow: "0 4px 10px rgba(0,0,0,0.7)",
+              borderLeft: "1px solid var(--metal-light)",
+              borderRight: "1px solid var(--metal-light)",
+            }} />
+          {/* shelf brackets */}
+          <div className="absolute left-0 top-2 bottom-2 w-1" style={{ background: "var(--metal-mid)" }} />
+          <div className="absolute right-0 top-2 bottom-2 w-1" style={{ background: "var(--metal-mid)" }} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ComingSoonPanel({ name }: { name: string }) {
+  return (
+    <div className="p-6 text-center space-y-3">
+      <div className="font-pixel text-[14px] text-neon-purple">{name.toUpperCase()}</div>
+      <div className="font-mono-pixel text-[14px] text-muted-foreground">Module compiling…</div>
+      <div className="mx-auto h-2 w-3/4 bg-black/60 border border-[color:var(--metal-dark)] overflow-hidden rounded-sm">
+        <div className="h-full pulse-glow" style={{ width: "40%", background: "linear-gradient(90deg, var(--neon-purple), var(--neon-cyan))" }} />
+      </div>
+      <div className="font-mono-pixel text-[12px] text-neon-cyan/70">[ COMING SOON ]</div>
     </div>
   );
 }

@@ -105,8 +105,8 @@
 @keyframes dust-float { 0% { transform: translate(0,0); opacity: 0; } 30% { opacity: 0.5; } 100% { transform: translate(40px,-100px); opacity: 0; } }
 @keyframes spark { 0% { transform: translate(0,0) scale(1); opacity: 1; } 100% { transform: translate(var(--sx), var(--sy)) scale(0); opacity: 0; } }
 
-.spin-fan { animation: spin-fast 0.8s linear infinite; transform-origin: center; transform-box: fill-box; }
-.spin-fan-slow { animation: spin-fast 3s linear infinite; transform-origin: center; transform-box: fill-box; }
+.spin-fan { animation: spin-fast 0.8s linear infinite; transform-origin: 0 0; transform-box: view-box; }
+.spin-fan-slow { animation: spin-fast 3s linear infinite; transform-origin: 0 0; transform-box: view-box; }
 .led-blink { animation: blink-led 1.4s ease-in-out infinite; }
 .flicker { animation: flicker 4s linear infinite; }
 .pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
