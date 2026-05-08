@@ -45,22 +45,24 @@ export function PixelGpu({ model, idx }: { model: GpuModel; idx: number }) {
           <g key={i}>
             <circle cx={cx} cy="38" r="20" fill="#0a0a0e" stroke={trim} strokeWidth="1" />
             <circle cx={cx} cy="38" r="18" fill="none" stroke="#1a1a22" strokeWidth="1" />
-            {/* Spinning blades */}
-            <g className={tier === "starter" ? "spin-fan-slow" : "spin-fan"} style={{ transformOrigin: `${cx}px 38px` }}>
-              {[0, 60, 120, 180, 240, 300].map((a) => (
-                <path
-                  key={a}
-                  d={`M${cx},38 Q${cx + 6},${38 - 10} ${cx + 14},${38 - 14}`}
-                  fill="none"
-                  stroke={tier === "starter" ? "#444" : c}
-                  strokeWidth="2"
-                  opacity={tier === "starter" ? 0.6 : 0.9}
-                  transform={`rotate(${a + idx * 13} ${cx} 38)`}
-                />
-              ))}
-              <circle cx={cx} cy="38" r="4" fill={trim} />
-              <circle cx={cx} cy="38" r="2" fill="#000" />
-            </g>
+            {/* Spinning blades — nested svg so rotation centers cleanly */}
+            <svg x={cx - 20} y={18} width="40" height="40" viewBox="-20 -20 40 40" overflow="visible">
+              <g className={tier === "starter" ? "spin-fan-slow" : "spin-fan"}>
+                {[0, 60, 120, 180, 240, 300].map((a) => (
+                  <path
+                    key={a}
+                    d={`M0,0 Q6,-10 14,-14`}
+                    fill="none"
+                    stroke={tier === "starter" ? "#444" : c}
+                    strokeWidth="2"
+                    opacity={tier === "starter" ? 0.6 : 0.9}
+                    transform={`rotate(${a + i * 30 + idx * 13})`}
+                  />
+                ))}
+                <circle r="4" fill={trim} />
+                <circle r="2" fill="#000" />
+              </g>
+            </svg>
             {/* RGB ring */}
             {tier !== "starter" && (
               <circle cx={cx} cy="38" r="20" fill="none" stroke={c} strokeWidth="1" opacity="0.8"
