@@ -24,6 +24,7 @@ export function RoomScene({ owned, hashrate: _hashrate, heat, shelves = 2 }:
       }}>
       {/* Wall: concrete blocks + grid */}
       <div className="absolute inset-0 bg-grid opacity-60" />
+      <div className="absolute inset-0 pixel-wall opacity-80 pointer-events-none" />
       <div
         className="absolute inset-0 opacity-30 pointer-events-none"
         style={{
