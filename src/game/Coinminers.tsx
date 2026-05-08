@@ -34,6 +34,29 @@ export function Coinminers() {
   const [floats, setFloats] = useState<Array<{ id: number; x: number; y: number; v: number }>>([]);
   const floatId = useRef(0);
   const [marketPrice, setMarketPrice] = useState(67432);
+  const [shelves, setShelves] = useState(2);
+  const [research, setResearch] = useState<Record<string, number>>({});
+  const [claimed, setClaimed] = useState<Record<string, boolean>>({});
+
+  const shelfCapacity = shelves * 4;
+  const shelfCost = 0.02 * Math.pow(1.8, shelves - 2);
+
+  function buyShelf() {
+    if (btc < shelfCost) return;
+    setBtc(b => b - shelfCost);
+    setShelves(s => s + 1);
+  }
+  function buyResearch(id: string, cost: number, max: number) {
+    const lvl = research[id] ?? 0;
+    if (lvl >= max || btc < cost) return;
+    setBtc(b => b - cost);
+    setResearch(r => ({ ...r, [id]: lvl + 1 }));
+  }
+  function claimMission(id: string, reward: number) {
+    if (claimed[id]) return;
+    setClaimed(c => ({ ...c, [id]: true }));
+    setBtc(b => b + reward);
+  }
 
   // Derived stats
   const stats = useMemo(() => {
@@ -89,6 +112,7 @@ export function Coinminers() {
   function buyGpu(modelId: string, e?: React.MouseEvent) {
     const m = GPU_MODELS.find(x => x.id === modelId)!;
     if (btc < m.basePrice) return;
+    if (owned.length >= shelfCapacity) return;
     setBtc(b => b - m.basePrice);
     setOwned(o => [...o, { id: `g${Date.now()}-${Math.random()}`, modelId }]);
     if (e) {
@@ -186,7 +210,7 @@ export function Coinminers() {
 
         {/* Center scene */}
         <main className="flex-1 p-3 min-w-0 relative min-h-[420px] lg:min-h-0">
-          <RoomScene owned={owned} hashrate={stats.finalHash} heat={stats.finalHeat} />
+          <RoomScene owned={owned} hashrate={stats.finalHash} heat={stats.finalHeat} shelves={shelves} />
         </main>
 
         {/* Right shop / panel */}
@@ -197,9 +221,13 @@ export function Coinminers() {
           ) : tab === "facilities" ? (
             <FacilityPanel btc={btc} current={facility} onPick={setFacility} />
           ) : tab === "gpus" ? (
-            <InventoryPanel owned={owned} />
+            <InventoryPanel owned={owned} shelves={shelves} shelfCost={shelfCost} btc={btc} onBuyShelf={buyShelf} />
           ) : tab === "shop" || tab === "home" ? (
-            <ShopPanel btc={btc} onBuy={buyGpu} />
+            <ShopPanel btc={btc} onBuy={buyGpu} capacity={shelfCapacity} owned={owned.length} />
+          ) : tab === "research" ? (
+            <ResearchPanel btc={btc} levels={research} onBuy={buyResearch} />
+          ) : tab === "missions" ? (
+            <MissionsPanel btc={btc} owned={owned.length} hashrate={stats.finalHash} upgradesCount={Object.values(upgrades).reduce((a,b)=>a+b,0)} claimed={claimed} onClaim={claimMission} />
           ) : (
             <ComingSoonPanel name={SIDEBAR.find(s => s.id === tab)?.label ?? "Section"} />
           )}
