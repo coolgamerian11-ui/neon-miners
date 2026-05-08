@@ -495,3 +495,111 @@ function ComingSoonPanel({ name }: { name: string }) {
     </div>
   );
 }
+
+const RESEARCH = [
+  { id: "asic",   name: "ASIC R&D",         desc: "+30% hash for ASIC tier",  base: 0.5,  max: 10, icon: "🧪" },
+  { id: "quant",  name: "Quantum Theory",   desc: "Unlock quantum bonuses",   base: 2,    max: 8,  icon: "⚛" },
+  { id: "neural", name: "Neural Optimizer", desc: "+12% global efficiency",   base: 0.8,  max: 12, icon: "🧠" },
+  { id: "crypto", name: "CryptoMath",       desc: "+8% block reward",         base: 0.3,  max: 15, icon: "𝛴" },
+  { id: "therm",  name: "Thermodynamics",   desc: "-10% heat output",         base: 0.4,  max: 12, icon: "🌡" },
+  { id: "auto",   name: "Auto-Trader AI",   desc: "Sells dust auto",          base: 1.2,  max: 6,  icon: "📈" },
+];
+
+function ResearchPanel({ btc, levels, onBuy }:
+  { btc: number; levels: Record<string, number>; onBuy: (id: string, cost: number, max: number) => void }) {
+  return (
+    <div className="p-3 space-y-2">
+      <h2 className="font-pixel text-[11px] text-neon-purple">✦ RESEARCH LAB</h2>
+      <div className="font-mono-pixel text-[12px] text-muted-foreground">
+        Unlock long-term breakthroughs.
+      </div>
+      {RESEARCH.map(r => {
+        const lvl = levels[r.id] ?? 0;
+        const cost = r.base * Math.pow(1.7, lvl);
+        const maxed = lvl >= r.max;
+        const can = !maxed && btc >= cost;
+        return (
+          <div key={r.id} className="metal-panel p-2 relative">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl">{r.icon}</span>
+              <div className="flex-1 min-w-0">
+                <div className="font-pixel text-[10px] text-neon-purple">{r.name}</div>
+                <div className="font-mono-pixel text-[12px] text-muted-foreground">{r.desc}</div>
+              </div>
+              <div className="font-pixel text-[10px] text-neon-cyan">Lv.{lvl}/{r.max}</div>
+            </div>
+            <div className="mt-2 grid gap-0.5" style={{ gridTemplateColumns: `repeat(${r.max}, 1fr)` }}>
+              {Array.from({ length: r.max }).map((_, i) => (
+                <div key={i} className="h-2"
+                  style={{
+                    background: i < lvl ? "var(--neon-purple)" : "rgba(0,0,0,0.5)",
+                    boxShadow: i < lvl ? "0 0 4px var(--neon-purple)" : "inset 0 0 4px black",
+                    border: "1px solid var(--metal-dark)",
+                  }} />
+              ))}
+            </div>
+            <div className="flex items-center justify-between mt-2">
+              <span className="font-pixel text-[11px] btc-text">₿ {fmtBtc(cost)}</span>
+              <button onClick={() => onBuy(r.id, cost, r.max)} disabled={!can}
+                className="btn-buy px-3 py-1 font-pixel text-[10px] rounded-sm">
+                {maxed ? "MAX" : "RESEARCH ✦"}
+              </button>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function MissionsPanel({ btc: _btc, owned, hashrate, upgradesCount, claimed, onClaim }:
+  { btc: number; owned: number; hashrate: number; upgradesCount: number; claimed: Record<string, boolean>; onClaim: (id: string, reward: number) => void }) {
+  const missions = [
+    { id: "m1", name: "First Blood",     desc: "Own 3 GPUs",            target: 3,   progress: owned,         reward: 0.05, icon: "◈" },
+    { id: "m2", name: "Rig Builder",     desc: "Own 8 GPUs",            target: 8,   progress: owned,         reward: 0.4,  icon: "▦" },
+    { id: "m3", name: "Hash Hero",      desc: "Reach 10 TH/s",          target: 10,  progress: hashrate,      reward: 0.8,  icon: "⚡" },
+    { id: "m4", name: "Tinkerer",       desc: "Buy 5 upgrades",         target: 5,   progress: upgradesCount, reward: 0.2,  icon: "⚙" },
+    { id: "m5", name: "Scale Up",       desc: "Reach 100 TH/s",         target: 100, progress: hashrate,      reward: 4,    icon: "▲" },
+    { id: "m6", name: "Mining Tycoon",  desc: "Own 20 GPUs",            target: 20,  progress: owned,         reward: 6,    icon: "♛" },
+  ];
+  return (
+    <div className="p-3 space-y-2">
+      <h2 className="font-pixel text-[11px] text-neon-orange">◈ MISSIONS</h2>
+      <div className="font-mono-pixel text-[12px] text-muted-foreground">Complete to earn ₿ rewards.</div>
+      {missions.map(m => {
+        const pct = Math.min(100, (m.progress / m.target) * 100);
+        const done = m.progress >= m.target;
+        const isClaimed = claimed[m.id];
+        return (
+          <div key={m.id} className="metal-panel p-2">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl">{m.icon}</span>
+              <div className="flex-1 min-w-0">
+                <div className="font-pixel text-[10px] text-neon-cyan">{m.name}</div>
+                <div className="font-mono-pixel text-[12px] text-muted-foreground">{m.desc}</div>
+              </div>
+              <div className="font-pixel text-[10px] btc-text">+₿{fmtBtc(m.reward)}</div>
+            </div>
+            <div className="mt-2 h-2 bg-black/60 border border-[color:var(--metal-dark)] overflow-hidden">
+              <div className="h-full" style={{
+                width: `${pct}%`,
+                background: done ? "linear-gradient(90deg, var(--neon-green), var(--btc-gold))"
+                                 : "linear-gradient(90deg, var(--neon-cyan), var(--neon-purple))",
+                boxShadow: done ? "0 0 8px var(--neon-green)" : "0 0 4px var(--neon-cyan)",
+              }} />
+            </div>
+            <div className="flex items-center justify-between mt-2">
+              <span className="font-mono-pixel text-[11px] text-muted-foreground">
+                {Math.min(m.progress, m.target).toFixed(m.target < 10 ? 0 : 1)}/{m.target}
+              </span>
+              <button onClick={() => onClaim(m.id, m.reward)} disabled={!done || isClaimed}
+                className="btn-buy px-3 py-1 font-pixel text-[10px] rounded-sm">
+                {isClaimed ? "CLAIMED" : done ? "CLAIM ▶" : "LOCKED"}
+              </button>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
