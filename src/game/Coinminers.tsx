@@ -209,7 +209,7 @@ export function Coinminers() {
         </aside>
 
         {/* Center scene */}
-        <main className="flex-1 p-3 min-w-0 relative min-h-[420px] lg:min-h-0">
+        <main className="flex-1 p-3 min-w-0 relative min-h-[560px] lg:min-h-0">
           <RoomScene owned={owned} hashrate={stats.finalHash} heat={stats.finalHeat} shelves={shelves} />
         </main>
 

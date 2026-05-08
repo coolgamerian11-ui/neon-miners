@@ -36,6 +36,34 @@ export function PixelGpu({ model, idx }: { model: GpuModel; idx: number }) {
         {/* Backplate */}
         <rect x="4" y="14" width="116" height="48" fill={body} stroke={trim} strokeWidth="1" />
         <rect x="4" y="14" width="116" height="2" fill={trim} opacity="0.6" />
+        {/* RGB strip across top edge */}
+        <g>
+          {Array.from({ length: 28 }).map((_, i) => {
+            const colors = ["#ff2a8a", "#ff6a2a", "#ffe23a", "#3aff8a", "#3ad6ff", "#8a3aff"];
+            const col = colors[(i + idx) % colors.length];
+            return (
+              <rect key={i} x={6 + i * 4} y={16} width="3" height="1.5" fill={col}
+                opacity="0.95" style={{ filter: `drop-shadow(0 0 2px ${col})` }}>
+                <animate attributeName="opacity" values="0.4;1;0.4"
+                  dur={`${1 + (i % 3) * 0.3}s`} begin={`${i * 0.04}s`} repeatCount="indefinite" />
+              </rect>
+            );
+          })}
+        </g>
+        {/* RGB strip across bottom edge */}
+        <g>
+          {Array.from({ length: 28 }).map((_, i) => {
+            const colors = ["#3ad6ff", "#8a3aff", "#ff2a8a", "#ff6a2a", "#ffe23a", "#3aff8a"];
+            const col = colors[(i + idx + 2) % colors.length];
+            return (
+              <rect key={i} x={6 + i * 4} y={59} width="3" height="1.5" fill={col}
+                opacity="0.9" style={{ filter: `drop-shadow(0 0 2px ${col})` }}>
+                <animate attributeName="opacity" values="1;0.4;1"
+                  dur={`${1.2 + (i % 4) * 0.2}s`} begin={`${i * 0.05}s`} repeatCount="indefinite" />
+              </rect>
+            );
+          })}
+        </g>
         {/* Top heatsink fins */}
         {Array.from({ length: 28 }).map((_, i) => (
           <rect key={i} x={6 + i * 4} y={8} width="2" height="8" fill={trim} />
