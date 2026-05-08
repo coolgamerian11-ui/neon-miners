@@ -4,8 +4,10 @@ import { GPU_MODELS } from "./data";
 import { PixelGpu } from "./PixelGpu";
 
 /** Garage / facility room with deep environmental detail */
-export function RoomScene({ owned, hashrate, heat }: { owned: OwnedGpu[]; hashrate: number; heat: number }) {
-  const slots = 24;
+export function RoomScene({ owned, hashrate: _hashrate, heat, shelves = 2 }:
+  { owned: OwnedGpu[]; hashrate: number; heat: number; shelves?: number }) {
+  const perShelf = 4;
+  const slots = shelves * perShelf;
   const filled = owned.slice(0, slots);
   const dust = useMemo(() => Array.from({ length: 18 }, (_, i) => ({
     x: Math.random() * 100, y: Math.random() * 100, d: Math.random() * 6, s: 4 + Math.random() * 6, key: i,
@@ -22,6 +24,7 @@ export function RoomScene({ owned, hashrate, heat }: { owned: OwnedGpu[]; hashra
       }}>
       {/* Wall: concrete blocks + grid */}
       <div className="absolute inset-0 bg-grid opacity-60" />
+      <div className="absolute inset-0 pixel-wall opacity-80 pointer-events-none" />
       <div
         className="absolute inset-0 opacity-30 pointer-events-none"
         style={{
@@ -139,62 +142,60 @@ export function RoomScene({ owned, hashrate, heat }: { owned: OwnedGpu[]; hashra
         <div className="font-pixel btc-text text-sm">₿ BITCOIN</div>
       </div>
 
-      {/* Mining rig shelves (background midground) */}
-      <div className="absolute bottom-32 left-0 right-0 px-6">
-        <div className="grid grid-cols-6 gap-2 mb-2">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-3 metal-panel" />
-          ))}
-        </div>
-      </div>
-
-      {/* GPU rack grid */}
-      <div className="absolute left-0 right-0 bottom-16 px-6">
-        <div className="metal-panel p-3">
-          <div className="flex items-center justify-between mb-2">
-            <div className="text-[10px] font-pixel text-neon-cyan">RIG-A · {filled.length}/{slots}</div>
-            <div className="flex gap-1">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <span key={i} className="led-blink w-1.5 h-1.5 rounded-full"
-                  style={{
-                    background: i % 2 ? "var(--neon-green)" : "var(--neon-orange)",
-                    boxShadow: `0 0 4px ${i % 2 ? "var(--neon-green)" : "var(--neon-orange)"}`,
-                    animationDelay: `${i * 0.2}s`,
-                  }} />
-              ))}
-            </div>
-          </div>
-          <div
-            className="grid gap-2"
-            style={{ gridTemplateColumns: "repeat(6, minmax(0,1fr))" }}
-          >
-            {Array.from({ length: slots }).map((_, i) => {
-              const g = filled[i];
-              const model = g ? GPU_MODELS.find(m => m.id === g.modelId) : null;
-              return (
-                <div key={i}
-                  className="relative h-[80px] flex items-center justify-center"
-                  style={{
-                    background: "linear-gradient(180deg, #0c0c12, #050507)",
-                    border: "1px solid var(--metal-dark)",
-                    boxShadow: "inset 0 0 8px black",
-                  }}>
-                  {model ? (
-                    <div style={{ transform: "scale(0.78)" }}>
-                      <PixelGpu model={model} idx={i} />
+      {/* Wall shelves with GPUs sitting on planks */}
+      <div className="absolute left-0 right-0 bottom-20 px-6 flex flex-col gap-3">
+        {Array.from({ length: shelves }).map((_, si) => {
+          const row = filled.slice(si * perShelf, si * perShelf + perShelf);
+          return (
+            <div key={si} className="relative">
+              {/* Brackets */}
+              <div className="absolute -left-1 -top-1 bottom-0 w-2"
+                style={{ background: "linear-gradient(180deg, var(--metal-light), var(--metal-dark))", boxShadow: "1px 0 0 #000" }} />
+              <div className="absolute -right-1 -top-1 bottom-0 w-2"
+                style={{ background: "linear-gradient(180deg, var(--metal-light), var(--metal-dark))", boxShadow: "-1px 0 0 #000" }} />
+              {/* GPUs row */}
+              <div className="grid gap-2 px-2 pt-1 pb-0"
+                style={{ gridTemplateColumns: `repeat(${perShelf}, minmax(0,1fr))` }}>
+                {Array.from({ length: perShelf }).map((_, i) => {
+                  const g = row[i];
+                  const model = g ? GPU_MODELS.find(m => m.id === g.modelId) : null;
+                  return (
+                    <div key={i} className="relative h-[58px] flex items-end justify-center">
+                      {model ? (
+                        <div style={{ transform: "scale(0.62)", transformOrigin: "bottom center" }}>
+                          <PixelGpu model={model} idx={si * perShelf + i} />
+                        </div>
+                      ) : (
+                        <div className="text-[8px] font-pixel text-neon-cyan/30 mb-2">[ slot ]</div>
+                      )}
+                      <div className="absolute top-0 left-0 text-[7px] font-pixel text-neon-cyan/50">
+                        {String(si * perShelf + i + 1).padStart(2, "0")}
+                      </div>
                     </div>
-                  ) : (
-                    <div className="text-[9px] text-neon-cyan/40 font-pixel">EMPTY</div>
-                  )}
-                  {/* slot label */}
-                  <div className="absolute top-0.5 left-0.5 text-[7px] font-pixel text-neon-cyan/60">
-                    {String(i + 1).padStart(2, "0")}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+                  );
+                })}
+              </div>
+              {/* Wooden/metal plank */}
+              <div className="h-3 relative"
+                style={{
+                  background: "repeating-linear-gradient(90deg, #5a3a1c 0 6px, #4a2f17 6px 12px, #6a4520 12px 18px)",
+                  borderTop: "2px solid #2a1808",
+                  borderBottom: "3px solid #1a0e04",
+                  boxShadow: "0 6px 12px rgba(0,0,0,0.7), inset 0 1px 0 #8a5a30",
+                  imageRendering: "pixelated",
+                }}>
+                {/* Plank LED strip underneath */}
+                <div className="absolute -bottom-1 left-2 right-2 h-px"
+                  style={{ background: "var(--neon-cyan)", boxShadow: "0 0 6px var(--neon-cyan)" }} />
+              </div>
+              {/* Shelf tag */}
+              <div className="absolute -left-2 top-0 px-1 font-pixel text-[7px] text-neon-cyan/80"
+                style={{ background: "rgba(0,0,0,0.6)" }}>
+                S{String(si + 1).padStart(2, "0")}
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {/* Floor: cracked concrete + cables */}

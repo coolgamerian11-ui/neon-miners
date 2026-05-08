@@ -34,6 +34,29 @@ export function Coinminers() {
   const [floats, setFloats] = useState<Array<{ id: number; x: number; y: number; v: number }>>([]);
   const floatId = useRef(0);
   const [marketPrice, setMarketPrice] = useState(67432);
+  const [shelves, setShelves] = useState(2);
+  const [research, setResearch] = useState<Record<string, number>>({});
+  const [claimed, setClaimed] = useState<Record<string, boolean>>({});
+
+  const shelfCapacity = shelves * 4;
+  const shelfCost = 0.02 * Math.pow(1.8, shelves - 2);
+
+  function buyShelf() {
+    if (btc < shelfCost) return;
+    setBtc(b => b - shelfCost);
+    setShelves(s => s + 1);
+  }
+  function buyResearch(id: string, cost: number, max: number) {
+    const lvl = research[id] ?? 0;
+    if (lvl >= max || btc < cost) return;
+    setBtc(b => b - cost);
+    setResearch(r => ({ ...r, [id]: lvl + 1 }));
+  }
+  function claimMission(id: string, reward: number) {
+    if (claimed[id]) return;
+    setClaimed(c => ({ ...c, [id]: true }));
+    setBtc(b => b + reward);
+  }
 
   // Derived stats
   const stats = useMemo(() => {
@@ -89,6 +112,7 @@ export function Coinminers() {
   function buyGpu(modelId: string, e?: React.MouseEvent) {
     const m = GPU_MODELS.find(x => x.id === modelId)!;
     if (btc < m.basePrice) return;
+    if (owned.length >= shelfCapacity) return;
     setBtc(b => b - m.basePrice);
     setOwned(o => [...o, { id: `g${Date.now()}-${Math.random()}`, modelId }]);
     if (e) {
@@ -186,7 +210,7 @@ export function Coinminers() {
 
         {/* Center scene */}
         <main className="flex-1 p-3 min-w-0 relative min-h-[420px] lg:min-h-0">
-          <RoomScene owned={owned} hashrate={stats.finalHash} heat={stats.finalHeat} />
+          <RoomScene owned={owned} hashrate={stats.finalHash} heat={stats.finalHeat} shelves={shelves} />
         </main>
 
         {/* Right shop / panel */}
@@ -197,9 +221,13 @@ export function Coinminers() {
           ) : tab === "facilities" ? (
             <FacilityPanel btc={btc} current={facility} onPick={setFacility} />
           ) : tab === "gpus" ? (
-            <InventoryPanel owned={owned} />
+            <InventoryPanel owned={owned} shelves={shelves} shelfCost={shelfCost} btc={btc} onBuyShelf={buyShelf} />
           ) : tab === "shop" || tab === "home" ? (
-            <ShopPanel btc={btc} onBuy={buyGpu} />
+            <ShopPanel btc={btc} onBuy={buyGpu} capacity={shelfCapacity} owned={owned.length} />
+          ) : tab === "research" ? (
+            <ResearchPanel btc={btc} levels={research} onBuy={buyResearch} />
+          ) : tab === "missions" ? (
+            <MissionsPanel btc={btc} owned={owned.length} hashrate={stats.finalHash} upgradesCount={Object.values(upgrades).reduce((a,b)=>a+b,0)} claimed={claimed} onClaim={claimMission} />
           ) : (
             <ComingSoonPanel name={SIDEBAR.find(s => s.id === tab)?.label ?? "Section"} />
           )}
@@ -252,15 +280,22 @@ function Stat({ label, value, color }: { label: string; value: string; color: st
   );
 }
 
-function ShopPanel({ btc, onBuy }: { btc: number; onBuy: (id: string, e: React.MouseEvent) => void }) {
+function ShopPanel({ btc, onBuy, capacity, owned }: { btc: number; onBuy: (id: string, e: React.MouseEvent) => void; capacity: number; owned: number }) {
+  const full = owned >= capacity;
   return (
     <div className="p-3 space-y-3">
       <div className="flex items-center justify-between">
         <h2 className="font-pixel text-[11px] text-neon-cyan">▶ HARDWARE SHOP</h2>
-        <span className="font-mono-pixel text-[12px] text-muted-foreground">{GPU_MODELS.length} units</span>
+        <span className="font-mono-pixel text-[12px] text-muted-foreground">slots {owned}/{capacity}</span>
       </div>
+      {full && (
+        <div className="px-2 py-1 font-pixel text-[9px] text-neon-red border border-[color:var(--neon-red)]"
+          style={{ background: "rgba(40,5,5,0.5)" }}>
+          ⚠ SHELVES FULL — buy a shelf in GPUs tab
+        </div>
+      )}
       {GPU_MODELS.map(m => {
-        const can = btc >= m.basePrice;
+        const can = btc >= m.basePrice && !full;
         return (
           <div key={m.id} className="metal-panel p-2 relative overflow-hidden">
             <div className="absolute top-0 right-0 px-1.5 py-0.5 font-pixel text-[8px]"
@@ -373,16 +408,27 @@ function FacilityPanel({ btc, current, onPick }: { btc: number; current: string;
   );
 }
 
-function InventoryPanel({ owned }: { owned: OwnedGpu[] }) {
-  // Group owned GPUs into shelves of 4
+function InventoryPanel({ owned, shelves: shelvesCount, shelfCost, btc, onBuyShelf }:
+  { owned: OwnedGpu[]; shelves: number; shelfCost: number; btc: number; onBuyShelf: () => void }) {
   const shelves: OwnedGpu[][] = [];
-  for (let i = 0; i < owned.length; i += 4) shelves.push(owned.slice(i, i + 4));
-  if (shelves.length === 0) shelves.push([]);
+  for (let s = 0; s < shelvesCount; s++) shelves.push(owned.slice(s * 4, s * 4 + 4));
+  const can = btc >= shelfCost;
   return (
     <div className="p-3 space-y-3">
       <div className="flex items-center justify-between">
         <h2 className="font-pixel text-[11px] text-neon-green">▦ GPU INVENTORY</h2>
-        <span className="font-mono-pixel text-[12px] text-muted-foreground">{owned.length} units</span>
+        <span className="font-mono-pixel text-[12px] text-muted-foreground">{owned.length}/{shelvesCount * 4}</span>
+      </div>
+      <div className="metal-panel p-2 flex items-center justify-between">
+        <div>
+          <div className="font-pixel text-[10px] text-neon-orange">+ NEW SHELF</div>
+          <div className="font-mono-pixel text-[12px] text-muted-foreground">+4 GPU slots</div>
+        </div>
+        <div className="flex flex-col items-end gap-1">
+          <span className="font-pixel text-[10px] btc-text">₿ {fmtBtc(shelfCost)}</span>
+          <button onClick={onBuyShelf} disabled={!can}
+            className="btn-buy px-3 py-1 font-pixel text-[10px] rounded-sm">BUY ▶</button>
+        </div>
       </div>
       {shelves.map((row, ri) => (
         <div key={ri} className="relative">
@@ -446,6 +492,114 @@ function ComingSoonPanel({ name }: { name: string }) {
         <div className="h-full pulse-glow" style={{ width: "40%", background: "linear-gradient(90deg, var(--neon-purple), var(--neon-cyan))" }} />
       </div>
       <div className="font-mono-pixel text-[12px] text-neon-cyan/70">[ COMING SOON ]</div>
+    </div>
+  );
+}
+
+const RESEARCH = [
+  { id: "asic",   name: "ASIC R&D",         desc: "+30% hash for ASIC tier",  base: 0.5,  max: 10, icon: "🧪" },
+  { id: "quant",  name: "Quantum Theory",   desc: "Unlock quantum bonuses",   base: 2,    max: 8,  icon: "⚛" },
+  { id: "neural", name: "Neural Optimizer", desc: "+12% global efficiency",   base: 0.8,  max: 12, icon: "🧠" },
+  { id: "crypto", name: "CryptoMath",       desc: "+8% block reward",         base: 0.3,  max: 15, icon: "𝛴" },
+  { id: "therm",  name: "Thermodynamics",   desc: "-10% heat output",         base: 0.4,  max: 12, icon: "🌡" },
+  { id: "auto",   name: "Auto-Trader AI",   desc: "Sells dust auto",          base: 1.2,  max: 6,  icon: "📈" },
+];
+
+function ResearchPanel({ btc, levels, onBuy }:
+  { btc: number; levels: Record<string, number>; onBuy: (id: string, cost: number, max: number) => void }) {
+  return (
+    <div className="p-3 space-y-2">
+      <h2 className="font-pixel text-[11px] text-neon-purple">✦ RESEARCH LAB</h2>
+      <div className="font-mono-pixel text-[12px] text-muted-foreground">
+        Unlock long-term breakthroughs.
+      </div>
+      {RESEARCH.map(r => {
+        const lvl = levels[r.id] ?? 0;
+        const cost = r.base * Math.pow(1.7, lvl);
+        const maxed = lvl >= r.max;
+        const can = !maxed && btc >= cost;
+        return (
+          <div key={r.id} className="metal-panel p-2 relative">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl">{r.icon}</span>
+              <div className="flex-1 min-w-0">
+                <div className="font-pixel text-[10px] text-neon-purple">{r.name}</div>
+                <div className="font-mono-pixel text-[12px] text-muted-foreground">{r.desc}</div>
+              </div>
+              <div className="font-pixel text-[10px] text-neon-cyan">Lv.{lvl}/{r.max}</div>
+            </div>
+            <div className="mt-2 grid gap-0.5" style={{ gridTemplateColumns: `repeat(${r.max}, 1fr)` }}>
+              {Array.from({ length: r.max }).map((_, i) => (
+                <div key={i} className="h-2"
+                  style={{
+                    background: i < lvl ? "var(--neon-purple)" : "rgba(0,0,0,0.5)",
+                    boxShadow: i < lvl ? "0 0 4px var(--neon-purple)" : "inset 0 0 4px black",
+                    border: "1px solid var(--metal-dark)",
+                  }} />
+              ))}
+            </div>
+            <div className="flex items-center justify-between mt-2">
+              <span className="font-pixel text-[11px] btc-text">₿ {fmtBtc(cost)}</span>
+              <button onClick={() => onBuy(r.id, cost, r.max)} disabled={!can}
+                className="btn-buy px-3 py-1 font-pixel text-[10px] rounded-sm">
+                {maxed ? "MAX" : "RESEARCH ✦"}
+              </button>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function MissionsPanel({ btc: _btc, owned, hashrate, upgradesCount, claimed, onClaim }:
+  { btc: number; owned: number; hashrate: number; upgradesCount: number; claimed: Record<string, boolean>; onClaim: (id: string, reward: number) => void }) {
+  const missions = [
+    { id: "m1", name: "First Blood",     desc: "Own 3 GPUs",            target: 3,   progress: owned,         reward: 0.05, icon: "◈" },
+    { id: "m2", name: "Rig Builder",     desc: "Own 8 GPUs",            target: 8,   progress: owned,         reward: 0.4,  icon: "▦" },
+    { id: "m3", name: "Hash Hero",      desc: "Reach 10 TH/s",          target: 10,  progress: hashrate,      reward: 0.8,  icon: "⚡" },
+    { id: "m4", name: "Tinkerer",       desc: "Buy 5 upgrades",         target: 5,   progress: upgradesCount, reward: 0.2,  icon: "⚙" },
+    { id: "m5", name: "Scale Up",       desc: "Reach 100 TH/s",         target: 100, progress: hashrate,      reward: 4,    icon: "▲" },
+    { id: "m6", name: "Mining Tycoon",  desc: "Own 20 GPUs",            target: 20,  progress: owned,         reward: 6,    icon: "♛" },
+  ];
+  return (
+    <div className="p-3 space-y-2">
+      <h2 className="font-pixel text-[11px] text-neon-orange">◈ MISSIONS</h2>
+      <div className="font-mono-pixel text-[12px] text-muted-foreground">Complete to earn ₿ rewards.</div>
+      {missions.map(m => {
+        const pct = Math.min(100, (m.progress / m.target) * 100);
+        const done = m.progress >= m.target;
+        const isClaimed = claimed[m.id];
+        return (
+          <div key={m.id} className="metal-panel p-2">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl">{m.icon}</span>
+              <div className="flex-1 min-w-0">
+                <div className="font-pixel text-[10px] text-neon-cyan">{m.name}</div>
+                <div className="font-mono-pixel text-[12px] text-muted-foreground">{m.desc}</div>
+              </div>
+              <div className="font-pixel text-[10px] btc-text">+₿{fmtBtc(m.reward)}</div>
+            </div>
+            <div className="mt-2 h-2 bg-black/60 border border-[color:var(--metal-dark)] overflow-hidden">
+              <div className="h-full" style={{
+                width: `${pct}%`,
+                background: done ? "linear-gradient(90deg, var(--neon-green), var(--btc-gold))"
+                                 : "linear-gradient(90deg, var(--neon-cyan), var(--neon-purple))",
+                boxShadow: done ? "0 0 8px var(--neon-green)" : "0 0 4px var(--neon-cyan)",
+              }} />
+            </div>
+            <div className="flex items-center justify-between mt-2">
+              <span className="font-mono-pixel text-[11px] text-muted-foreground">
+                {Math.min(m.progress, m.target).toFixed(m.target < 10 ? 0 : 1)}/{m.target}
+              </span>
+              <button onClick={() => onClaim(m.id, m.reward)} disabled={!done || isClaimed}
+                className="btn-buy px-3 py-1 font-pixel text-[10px] rounded-sm">
+                {isClaimed ? "CLAIMED" : done ? "CLAIM ▶" : "LOCKED"}
+              </button>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

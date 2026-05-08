@@ -85,7 +85,15 @@
     color: var(--color-foreground);
     font-family: "VT323", monospace;
     overflow: hidden;
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+    -webkit-font-smoothing: none;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: geometricPrecision;
   }
+  svg { shape-rendering: crispEdges; }
+  button, .metal-panel, .btn-cyber, .btn-buy { border-radius: 0 !important; }
 }
 
 .font-pixel { font-family: "Press Start 2P", monospace; letter-spacing: 0.02em; }
@@ -187,9 +195,27 @@
 
 .bg-grid {
   background-image:
-    linear-gradient(color-mix(in oklab, var(--neon-cyan) 7%, transparent) 1px, transparent 1px),
-    linear-gradient(90deg, color-mix(in oklab, var(--neon-cyan) 7%, transparent) 1px, transparent 1px);
-  background-size: 28px 28px;
+    linear-gradient(color-mix(in oklab, var(--neon-cyan) 10%, transparent) 2px, transparent 2px),
+    linear-gradient(90deg, color-mix(in oklab, var(--neon-cyan) 10%, transparent) 2px, transparent 2px);
+  background-size: 16px 16px;
+}
+
+/* Pixelated checker overlay for walls */
+.pixel-wall {
+  background-image:
+    linear-gradient(45deg, rgba(255,255,255,0.02) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(255,255,255,0.02) 25%, transparent 25%);
+  background-size: 8px 8px;
+}
+
+/* Sharp 8-bit shadow utility */
+.pixel-shadow {
+  box-shadow:
+    2px 0 0 #000,
+    0 2px 0 #000,
+    2px 2px 0 #000,
+    -2px 0 0 #000,
+    0 -2px 0 #000;
 }
 
 .ticker-track { display: inline-flex; gap: 2.5rem; animation: ticker 60s linear infinite; white-space: nowrap; }
