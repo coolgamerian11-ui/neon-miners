@@ -372,3 +372,80 @@ function FacilityPanel({ btc, current, onPick }: { btc: number; current: string;
     </div>
   );
 }
+
+function InventoryPanel({ owned }: { owned: OwnedGpu[] }) {
+  // Group owned GPUs into shelves of 4
+  const shelves: OwnedGpu[][] = [];
+  for (let i = 0; i < owned.length; i += 4) shelves.push(owned.slice(i, i + 4));
+  if (shelves.length === 0) shelves.push([]);
+  return (
+    <div className="p-3 space-y-3">
+      <div className="flex items-center justify-between">
+        <h2 className="font-pixel text-[11px] text-neon-green">▦ GPU INVENTORY</h2>
+        <span className="font-mono-pixel text-[12px] text-muted-foreground">{owned.length} units</span>
+      </div>
+      {shelves.map((row, ri) => (
+        <div key={ri} className="relative">
+          <div className="metal-panel p-2">
+            <div className="flex items-center justify-between mb-1">
+              <span className="font-pixel text-[9px] text-neon-cyan">SHELF {String(ri + 1).padStart(2, "0")}</span>
+              <span className="font-mono-pixel text-[11px] text-muted-foreground">{row.length}/4</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {Array.from({ length: 4 }).map((_, i) => {
+                const g = row[i];
+                const m = g ? GPU_MODELS.find(x => x.id === g.modelId) : null;
+                return (
+                  <div key={i} className="relative h-[78px] flex items-center justify-center"
+                    style={{
+                      background: "linear-gradient(180deg, #0c0c12, #050507)",
+                      border: "1px solid var(--metal-dark)",
+                      boxShadow: "inset 0 0 8px black",
+                    }}>
+                    {m ? (
+                      <div style={{ transform: "scale(0.72)" }}>
+                        <PixelGpu model={m} idx={ri * 4 + i} />
+                      </div>
+                    ) : (
+                      <div className="font-pixel text-[8px] text-neon-cyan/40">EMPTY</div>
+                    )}
+                    {m && (
+                      <div className="absolute bottom-0 left-0 right-0 px-1 py-0.5 font-mono-pixel text-[10px]"
+                        style={{ background: "rgba(0,0,0,0.7)", color: "var(--neon-cyan)" }}>
+                        {m.name.split(" ")[0]}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+          {/* shelf plank */}
+          <div className="h-2 mx-1 -mt-px"
+            style={{
+              background: "linear-gradient(180deg, var(--metal-light), var(--metal-mid) 40%, #000)",
+              boxShadow: "0 4px 10px rgba(0,0,0,0.7)",
+              borderLeft: "1px solid var(--metal-light)",
+              borderRight: "1px solid var(--metal-light)",
+            }} />
+          {/* shelf brackets */}
+          <div className="absolute left-0 top-2 bottom-2 w-1" style={{ background: "var(--metal-mid)" }} />
+          <div className="absolute right-0 top-2 bottom-2 w-1" style={{ background: "var(--metal-mid)" }} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ComingSoonPanel({ name }: { name: string }) {
+  return (
+    <div className="p-6 text-center space-y-3">
+      <div className="font-pixel text-[14px] text-neon-purple">{name.toUpperCase()}</div>
+      <div className="font-mono-pixel text-[14px] text-muted-foreground">Module compiling…</div>
+      <div className="mx-auto h-2 w-3/4 bg-black/60 border border-[color:var(--metal-dark)] overflow-hidden rounded-sm">
+        <div className="h-full pulse-glow" style={{ width: "40%", background: "linear-gradient(90deg, var(--neon-purple), var(--neon-cyan))" }} />
+      </div>
+      <div className="font-mono-pixel text-[12px] text-neon-cyan/70">[ COMING SOON ]</div>
+    </div>
+  );
+}
