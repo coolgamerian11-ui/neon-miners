@@ -280,15 +280,22 @@ function Stat({ label, value, color }: { label: string; value: string; color: st
   );
 }
 
-function ShopPanel({ btc, onBuy }: { btc: number; onBuy: (id: string, e: React.MouseEvent) => void }) {
+function ShopPanel({ btc, onBuy, capacity, owned }: { btc: number; onBuy: (id: string, e: React.MouseEvent) => void; capacity: number; owned: number }) {
+  const full = owned >= capacity;
   return (
     <div className="p-3 space-y-3">
       <div className="flex items-center justify-between">
         <h2 className="font-pixel text-[11px] text-neon-cyan">▶ HARDWARE SHOP</h2>
-        <span className="font-mono-pixel text-[12px] text-muted-foreground">{GPU_MODELS.length} units</span>
+        <span className="font-mono-pixel text-[12px] text-muted-foreground">slots {owned}/{capacity}</span>
       </div>
+      {full && (
+        <div className="px-2 py-1 font-pixel text-[9px] text-neon-red border border-[color:var(--neon-red)]"
+          style={{ background: "rgba(40,5,5,0.5)" }}>
+          ⚠ SHELVES FULL — buy a shelf in GPUs tab
+        </div>
+      )}
       {GPU_MODELS.map(m => {
-        const can = btc >= m.basePrice;
+        const can = btc >= m.basePrice && !full;
         return (
           <div key={m.id} className="metal-panel p-2 relative overflow-hidden">
             <div className="absolute top-0 right-0 px-1.5 py-0.5 font-pixel text-[8px]"
@@ -401,16 +408,27 @@ function FacilityPanel({ btc, current, onPick }: { btc: number; current: string;
   );
 }
 
-function InventoryPanel({ owned }: { owned: OwnedGpu[] }) {
-  // Group owned GPUs into shelves of 4
+function InventoryPanel({ owned, shelves: shelvesCount, shelfCost, btc, onBuyShelf }:
+  { owned: OwnedGpu[]; shelves: number; shelfCost: number; btc: number; onBuyShelf: () => void }) {
   const shelves: OwnedGpu[][] = [];
-  for (let i = 0; i < owned.length; i += 4) shelves.push(owned.slice(i, i + 4));
-  if (shelves.length === 0) shelves.push([]);
+  for (let s = 0; s < shelvesCount; s++) shelves.push(owned.slice(s * 4, s * 4 + 4));
+  const can = btc >= shelfCost;
   return (
     <div className="p-3 space-y-3">
       <div className="flex items-center justify-between">
         <h2 className="font-pixel text-[11px] text-neon-green">▦ GPU INVENTORY</h2>
-        <span className="font-mono-pixel text-[12px] text-muted-foreground">{owned.length} units</span>
+        <span className="font-mono-pixel text-[12px] text-muted-foreground">{owned.length}/{shelvesCount * 4}</span>
+      </div>
+      <div className="metal-panel p-2 flex items-center justify-between">
+        <div>
+          <div className="font-pixel text-[10px] text-neon-orange">+ NEW SHELF</div>
+          <div className="font-mono-pixel text-[12px] text-muted-foreground">+4 GPU slots</div>
+        </div>
+        <div className="flex flex-col items-end gap-1">
+          <span className="font-pixel text-[10px] btc-text">₿ {fmtBtc(shelfCost)}</span>
+          <button onClick={onBuyShelf} disabled={!can}
+            className="btn-buy px-3 py-1 font-pixel text-[10px] rounded-sm">BUY ▶</button>
+        </div>
       </div>
       {shelves.map((row, ri) => (
         <div key={ri} className="relative">
