@@ -111,10 +111,10 @@ export function Coinminers() {
   const currentFacility = FACILITIES.find(f => f.id === facility)!;
 
   return (
-    <div className="relative h-screen w-screen overflow-hidden text-foreground"
+    <div className="relative min-h-screen w-screen overflow-x-hidden text-foreground flex flex-col"
       style={{ background: "radial-gradient(ellipse at center top, #1a1828, #0a0a12 70%)" }}>
       {/* Top HUD bar */}
-      <header className="relative z-30 h-14 flex items-stretch border-b border-[color:var(--metal-light)]"
+      <header className="relative z-30 flex items-stretch flex-wrap border-b border-[color:var(--metal-light)] shrink-0"
         style={{ background: "linear-gradient(180deg, #1a1a25, #0c0c14)" }}>
         {/* Logo */}
         <div className="flex items-center gap-2 px-4 border-r border-[color:var(--metal-light)] min-w-[200px]">
@@ -165,19 +165,19 @@ export function Coinminers() {
       </header>
 
       {/* Body */}
-      <div className="flex" style={{ height: "calc(100vh - 56px - 28px)" }}>
+      <div className="flex flex-col lg:flex-row flex-1 min-h-0">
         {/* Sidebar */}
-        <aside className="w-[180px] flex flex-col gap-1 p-2 border-r border-[color:var(--metal-light)]"
+        <aside className="w-full lg:w-[180px] flex lg:flex-col gap-1 p-2 border-b lg:border-b-0 lg:border-r border-[color:var(--metal-light)] overflow-x-auto cyber-scroll shrink-0"
           style={{ background: "linear-gradient(180deg, #14141d, #0a0a12)" }}>
           {SIDEBAR.map(s => (
             <button key={s.id}
               onClick={() => setTab(s.id)}
-              className={`btn-cyber ${tab === s.id ? "active" : ""} text-left px-3 py-2 font-pixel text-[10px] flex items-center gap-2 rounded-sm`}>
+              className={`btn-cyber ${tab === s.id ? "active" : ""} text-left px-3 py-2 font-pixel text-[10px] flex items-center gap-2 rounded-sm shrink-0 whitespace-nowrap`}>
               <span className="text-base leading-none w-5">{s.icon}</span>
               <span>{s.label}</span>
             </button>
           ))}
-          <div className="mt-auto metal-panel p-2 text-[10px]">
+          <div className="hidden lg:block mt-auto metal-panel p-2 text-[10px]">
             <div className="font-pixel text-neon-cyan mb-1">FACILITY</div>
             <div className="font-mono-pixel text-base text-neon-orange">{currentFacility.name}</div>
             <div className="font-mono-pixel text-muted-foreground">cap {owned.length}/{currentFacility.capacity}</div>
@@ -185,25 +185,29 @@ export function Coinminers() {
         </aside>
 
         {/* Center scene */}
-        <main className="flex-1 p-3 min-w-0 relative">
+        <main className="flex-1 p-3 min-w-0 relative min-h-[420px] lg:min-h-0">
           <RoomScene owned={owned} hashrate={stats.finalHash} heat={stats.finalHeat} />
         </main>
 
         {/* Right shop / panel */}
-        <aside className="w-[360px] border-l border-[color:var(--metal-light)] overflow-y-auto cyber-scroll"
+        <aside className="w-full lg:w-[360px] border-t lg:border-t-0 lg:border-l border-[color:var(--metal-light)] overflow-y-auto cyber-scroll max-h-[60vh] lg:max-h-none"
           style={{ background: "linear-gradient(180deg, #14141d, #0a0a12)" }}>
           {tab === "upgrades" ? (
             <UpgradePanel btc={btc} levels={upgrades} onBuy={buyUpgrade} />
           ) : tab === "facilities" ? (
             <FacilityPanel btc={btc} current={facility} onPick={setFacility} />
-          ) : (
+          ) : tab === "gpus" ? (
+            <InventoryPanel owned={owned} />
+          ) : tab === "shop" || tab === "home" ? (
             <ShopPanel btc={btc} onBuy={buyGpu} />
+          ) : (
+            <ComingSoonPanel name={SIDEBAR.find(s => s.id === tab)?.label ?? "Section"} />
           )}
         </aside>
       </div>
 
       {/* Bottom HUD */}
-      <div className="h-7 border-t border-[color:var(--metal-light)] flex items-center px-3 gap-4 text-[12px] font-mono-pixel"
+      <div className="h-7 border-t border-[color:var(--metal-light)] flex items-center px-3 gap-4 text-[12px] font-mono-pixel overflow-x-auto whitespace-nowrap shrink-0"
         style={{ background: "linear-gradient(180deg, #0c0c14, #06060a)" }}>
         <span className="text-neon-green">● ONLINE</span>
         <span className="text-muted-foreground">|</span>
