@@ -2,13 +2,17 @@ import { useMemo } from "react";
 import type { OwnedGpu } from "./types";
 import { GPU_MODELS } from "./data";
 import { PixelGpu } from "./PixelGpu";
+import { Ambience } from "./Ambience";
+import { Clutter } from "./Clutter";
 
 /** Garage / facility room with deep environmental detail */
-export function RoomScene({ owned, hashrate: _hashrate, heat, shelves = 2 }:
+export function RoomScene({ owned, hashrate, heat, shelves = 2 }:
   { owned: OwnedGpu[]; hashrate: number; heat: number; shelves?: number }) {
   const perShelf = 4;
   const slots = shelves * perShelf;
   const filled = owned.slice(0, slots);
+  const cableThickness = Math.min(6, 2 + owned.length * 0.15);
+  const serverBlades = Math.min(40, 8 + Math.floor(hashrate * 0.2));
   const dust = useMemo(() => Array.from({ length: 18 }, (_, i) => ({
     x: Math.random() * 100, y: Math.random() * 100, d: Math.random() * 6, s: 4 + Math.random() * 6, key: i,
   })), []);
@@ -25,6 +29,24 @@ export function RoomScene({ owned, hashrate: _hashrate, heat, shelves = 2 }:
       {/* Wall: concrete blocks + grid */}
       <div className="absolute inset-0 bg-grid opacity-60" />
       <div className="absolute inset-0 pixel-wall opacity-80 pointer-events-none" />
+
+      {/* BACKGROUND LAYER: server-wall silhouette behind shelves */}
+      <div className="absolute inset-y-0 left-0 right-0 z-0 opacity-50 pointer-events-none">
+        <div className="absolute left-2 top-12 bottom-20 w-[44%] grid grid-cols-4 gap-1 p-2"
+          style={{ background: "linear-gradient(180deg, #07080d, #0a0c12)", border: "1px solid var(--metal-dark)" }}>
+          {Array.from({ length: serverBlades }).map((_, i) => (
+            <div key={i} className="h-3 relative"
+              style={{ background: "linear-gradient(180deg,#1a1d24,#0a0c12)", border: "1px solid #000" }}>
+              <span className="absolute right-0.5 top-0.5 w-1 h-1 rounded-full"
+                style={{
+                  background: i % 3 === 0 ? "var(--neon-cyan)" : i % 3 === 1 ? "var(--neon-green)" : "var(--neon-orange)",
+                  boxShadow: "0 0 3px currentColor",
+                  animation: `blink-led ${1 + (i % 5) * 0.3}s ease-in-out ${i * 0.1}s infinite`,
+                }} />
+            </div>
+          ))}
+        </div>
+      </div>
       <div
         className="absolute inset-0 opacity-30 pointer-events-none"
         style={{
@@ -98,12 +120,17 @@ export function RoomScene({ owned, hashrate: _hashrate, heat, shelves = 2 }:
         <span className="text-[9px] font-pixel text-neon-red">ZONE 1</span>
       </div>
 
-      {/* Hanging cables from ceiling */}
-      <svg className="absolute top-0 left-0 right-0 h-24 w-full pointer-events-none" viewBox="0 0 800 100" preserveAspectRatio="none">
-        <path d="M120 0 Q140 60 160 80" stroke="#000" strokeWidth="3" fill="none" />
-        <path d="M280 0 Q300 40 290 70" stroke="#1a1a1a" strokeWidth="2" fill="none" />
-        <path d="M520 0 Q540 70 560 90" stroke="#000" strokeWidth="3" fill="none" />
-        <path d="M620 0 Q610 30 640 60" stroke="#1a1a1a" strokeWidth="2" fill="none" />
+      {/* FOREGROUND: Hanging cables (sway). Thicker as more rigs are owned. */}
+      <svg className="absolute top-0 left-0 right-0 h-32 w-full pointer-events-none z-30 cable-sway"
+        viewBox="0 0 800 120" preserveAspectRatio="none">
+        <path d="M120 0 Q140 70 160 100" stroke="#000" strokeWidth={cableThickness} fill="none" />
+        <path d="M120 0 Q140 70 160 100" stroke="var(--neon-orange)" strokeWidth="0.6" fill="none" opacity="0.4" />
+        <path d="M280 0 Q300 50 290 90" stroke="#1a1a1a" strokeWidth={cableThickness - 0.5} fill="none" />
+        <path d="M520 0 Q540 80 560 105" stroke="#000" strokeWidth={cableThickness} fill="none" />
+        <path d="M520 0 Q540 80 560 105" stroke="var(--neon-cyan)" strokeWidth="0.6" fill="none" opacity="0.4" />
+        <path d="M620 0 Q610 40 640 70" stroke="#1a1a1a" strokeWidth={cableThickness - 0.5} fill="none" />
+        <path d="M380 0 Q360 60 400 110" stroke="#000" strokeWidth={cableThickness} fill="none" />
+        <path d="M380 0 Q360 60 400 110" stroke="var(--neon-purple)" strokeWidth="0.6" fill="none" opacity="0.4" />
       </svg>
 
       {/* Pipes */}
@@ -143,14 +170,15 @@ export function RoomScene({ owned, hashrate: _hashrate, heat, shelves = 2 }:
       </div>
 
       {/* Tall vertical wall of separate shelves — scrolls if many */}
-      <div className="absolute left-2 right-2 top-2 bottom-20 overflow-y-auto cyber-scroll z-10"
+      <div className="absolute left-[46%] right-2 top-2 bottom-20 overflow-y-auto cyber-scroll z-10"
         style={{ scrollbarGutter: "stable" }}>
         <div className="flex flex-col gap-5 py-2 pr-2">
           {Array.from({ length: shelves }).map((_, si) => {
             const row = filled.slice(si * perShelf, si * perShelf + perShelf);
             const ledColor = ["#ff3da6","#3df0ff","#aaff3d","#ff9d3d","#c93dff","#3dff8c"][si % 6];
+            const filledCount = row.length;
             return (
-              <div key={si} className="relative" style={{ marginLeft: 14, marginRight: 14 }}>
+              <div key={si} className={`relative ${filledCount > 0 ? "server-pulse" : ""}`} style={{ marginLeft: 14, marginRight: 14 }}>
                 {/* Vertical bracket bars connecting to ceiling */}
                 <div className="absolute -left-3 -top-6 bottom-0 w-2"
                   style={{ background: "linear-gradient(180deg, var(--metal-light), var(--metal-dark))",
@@ -206,7 +234,11 @@ export function RoomScene({ owned, hashrate: _hashrate, heat, shelves = 2 }:
                     imageRendering: "pixelated",
                   }}>
                   <div className="absolute -bottom-1 left-1 right-1 h-1"
-                    style={{ background: ledColor, boxShadow: `0 0 10px ${ledColor}, 0 0 18px ${ledColor}` }} />
+                    style={{
+                      background: ledColor,
+                      boxShadow: `0 0 ${6 + filledCount * 3}px ${ledColor}, 0 0 ${12 + filledCount * 4}px ${ledColor}`,
+                      opacity: 0.5 + filledCount * 0.12,
+                    }} />
                 </div>
 
                 {/* Shelf label tag */}
@@ -270,6 +302,11 @@ export function RoomScene({ owned, hashrate: _hashrate, heat, shelves = 2 }:
             }} />
         ))}
       </div>
+
+      {/* Ambient layer (BTC particles, scanline sweep, fan, steam) */}
+      <Ambience active intensity={Math.min(4, 1 + owned.length * 0.15)} />
+      {/* Decorative clutter on the floor */}
+      <Clutter />
 
       <div className="vignette" />
       <div className="crt-overlay" />
