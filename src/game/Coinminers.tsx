@@ -37,6 +37,12 @@ export function Coinminers() {
   const [shelves, setShelves] = useState(2);
   const [research, setResearch] = useState<Record<string, number>>({});
   const [claimed, setClaimed] = useState<Record<string, boolean>>({});
+  const [shake, setShake] = useState(false);
+  const [pulseTick, setPulseTick] = useState(0);
+  const [tickFloats, setTickFloats] = useState<Array<{ id: number; v: number }>>([]);
+  const tickFloatId = useRef(0);
+  const blockProgressRef = useRef(0);
+  const [blockProgress, setBlockProgress] = useState(0);
 
   const shelfCapacity = shelves * 4;
   const shelfCost = 0.02 * Math.pow(1.8, shelves - 2);
@@ -45,17 +51,25 @@ export function Coinminers() {
     if (btc < shelfCost) return;
     setBtc(b => b - shelfCost);
     setShelves(s => s + 1);
+    triggerShake();
   }
   function buyResearch(id: string, cost: number, max: number) {
     const lvl = research[id] ?? 0;
     if (lvl >= max || btc < cost) return;
     setBtc(b => b - cost);
     setResearch(r => ({ ...r, [id]: lvl + 1 }));
+    triggerShake();
   }
   function claimMission(id: string, reward: number) {
     if (claimed[id]) return;
     setClaimed(c => ({ ...c, [id]: true }));
     setBtc(b => b + reward);
+    triggerShake();
+  }
+
+  function triggerShake() {
+    setShake(true);
+    setTimeout(() => setShake(false), 280);
   }
 
   // Derived stats
@@ -88,7 +102,17 @@ export function Coinminers() {
   // Idle income
   useEffect(() => {
     const t = setInterval(() => {
-      setBtc(b => b + stats.btcPerSec / 5);
+      const inc = stats.btcPerSec / 5;
+      setBtc(b => b + inc);
+      setPulseTick(p => p + 1);
+      blockProgressRef.current = (blockProgressRef.current + 1) % 50;
+      setBlockProgress(blockProgressRef.current);
+      // spawn floating tick number occasionally
+      if (Math.random() < 0.4 && inc > 0) {
+        const id = ++tickFloatId.current;
+        setTickFloats(f => [...f, { id, v: inc * 5 }]);
+        setTimeout(() => setTickFloats(f => f.filter(x => x.id !== id)), 1400);
+      }
     }, 200);
     return () => clearInterval(t);
   }, [stats.btcPerSec]);
@@ -130,12 +154,13 @@ export function Coinminers() {
     if (btc < cost) return;
     setBtc(b => b - cost);
     setUpgrades(u2 => ({ ...u2, [id]: lvl + 1 }));
+    triggerShake();
   }
 
   const currentFacility = FACILITIES.find(f => f.id === facility)!;
 
   return (
-    <div className="relative min-h-screen w-screen overflow-x-hidden text-foreground flex flex-col"
+    <div className={`relative min-h-screen w-screen overflow-x-hidden text-foreground flex flex-col ${shake ? "shake" : ""}`}
       style={{ background: "radial-gradient(ellipse at center top, #1a1828, #0a0a12 70%)" }}>
       {/* Top HUD bar */}
       <header className="relative z-30 flex items-stretch flex-wrap border-b border-[color:var(--metal-light)] shrink-0"
@@ -157,7 +182,24 @@ export function Coinminers() {
           <span className="font-pixel text-xl btc-text pulse-glow">₿</span>
           <div>
             <div className="font-pixel text-[10px] text-muted-foreground">BALANCE</div>
-            <div className="font-pixel text-base btc-text">{fmtBtc(btc)}</div>
+            <div key={pulseTick} className="stat-primary btc-text pulse-num relative">
+              {fmtBtc(btc)}
+              {/* Tick floats */}
+              {tickFloats.map(f => (
+                <span key={f.id} className="absolute left-full ml-1 top-0 font-pixel text-[10px] text-neon-green pointer-events-none whitespace-nowrap"
+                  style={{ animation: "float-up 1.4s ease-out forwards" }}>
+                  +₿{f.v.toFixed(6)}
+                </span>
+              ))}
+            </div>
+            {/* Next-block progress */}
+            <div className="mt-1 h-1 w-32 bg-black/60 border border-[color:var(--metal-dark)] overflow-hidden">
+              <div className="h-full" style={{
+                width: `${(blockProgress / 50) * 100}%`,
+                background: "linear-gradient(90deg, var(--btc-gold), var(--neon-orange))",
+                boxShadow: "0 0 6px var(--btc-gold-glow)",
+              }} />
+            </div>
           </div>
         </div>
 
@@ -188,6 +230,17 @@ export function Coinminers() {
         </div>
       </header>
 
+      {/* Radial flash on shake */}
+      {shake && (
+        <div className="pointer-events-none fixed inset-0 z-[90] flex items-center justify-center">
+          <div className="w-[80vmin] h-[80vmin] rounded-full"
+            style={{
+              background: "radial-gradient(circle, color-mix(in oklab, var(--neon-cyan) 25%, transparent), transparent 60%)",
+              animation: "radial-flash 280ms ease-out forwards",
+            }} />
+        </div>
+      )}
+
       {/* Body */}
       <div className="flex flex-col lg:flex-row flex-1 min-h-0">
         {/* Sidebar */}
@@ -209,7 +262,7 @@ export function Coinminers() {
         </aside>
 
         {/* Center scene */}
-        <main className="flex-1 p-3 min-w-0 relative min-h-[560px] lg:min-h-0">
+        <main className="flex-1 p-3 min-w-0 relative min-h-[640px] lg:min-h-0">
           <RoomScene owned={owned} hashrate={stats.finalHash} heat={stats.finalHeat} shelves={shelves} />
         </main>
 
