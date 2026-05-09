@@ -1,5 +1,20 @@
 import type { GpuModel, Upgrade, Facility } from "./types";
 
+export const RARITY_META: Record<string, { color: string; glow: string; label: string }> = {
+  Common:    { color: "#7c8a9a", glow: "rgba(124,138,154,0.4)", label: "C" },
+  Rare:      { color: "var(--neon-blue)",   glow: "color-mix(in oklab, var(--neon-blue) 70%, transparent)",   label: "R" },
+  Epic:      { color: "var(--neon-purple)", glow: "color-mix(in oklab, var(--neon-purple) 70%, transparent)", label: "E" },
+  Legendary: { color: "var(--neon-orange)", glow: "color-mix(in oklab, var(--neon-orange) 70%, transparent)", label: "L" },
+  Mythic:    { color: "var(--neon-cyan)",   glow: "color-mix(in oklab, var(--neon-cyan) 80%, transparent)",   label: "M" },
+};
+
+export const MFG_BY_TIER: Record<string, string> = {
+  starter: "RST",
+  mid:     "NFG",
+  high:    "ANT",
+  quantum: "QBT",
+};
+
 export const GPU_MODELS: GpuModel[] = [
   { id: "gtx750",  name: "RustyMiner GTX-750",  tier: "starter", hashrate: 0.05, power: 0.12, heat: 4,  basePrice: 0.0008, color: "var(--neon-blue)",   rarity: "Common" },
   { id: "gtx1060", name: "DustCore GTX-1060",   tier: "starter", hashrate: 0.18, power: 0.18, heat: 6,  basePrice: 0.004,  color: "var(--neon-blue)",   rarity: "Common" },
