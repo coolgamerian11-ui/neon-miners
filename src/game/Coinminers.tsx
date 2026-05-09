@@ -350,14 +350,14 @@ function ShopPanel({ btc, onBuy, capacity, owned }: { btc: number; onBuy: (id: s
       {GPU_MODELS.map(m => {
         const can = btc >= m.basePrice && !full;
         return (
-          <div key={m.id} className="metal-panel p-2 relative overflow-hidden">
+          <div key={m.id} className={`metal-panel p-2 relative overflow-hidden rarity-${m.rarity}`}>
             <div className="absolute top-0 right-0 px-1.5 py-0.5 font-pixel text-[8px]"
               style={{ background: RARITY_COLOR[m.rarity], color: "#000" }}>
               {m.rarity.toUpperCase()}
             </div>
             <div className="flex gap-3 items-start">
-              <div className="shrink-0 -ml-1" style={{ transform: "scale(0.85)", transformOrigin: "top left" }}>
-                <PixelGpu model={m} idx={0} />
+              <div className="shrink-0 -ml-1" style={{ transform: "scale(0.95)", transformOrigin: "top left" }}>
+                <PixelGpu model={m} idx={0} large heatPct={Math.min(1, m.heat / 70)} />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="font-pixel text-[10px] text-neon-cyan truncate">{m.name}</div>
@@ -495,15 +495,15 @@ function InventoryPanel({ owned, shelves: shelvesCount, shelfCost, btc, onBuyShe
                 const g = row[i];
                 const m = g ? GPU_MODELS.find(x => x.id === g.modelId) : null;
                 return (
-                  <div key={i} className="relative h-[78px] flex items-center justify-center"
+                  <div key={i} className={`relative h-[100px] flex items-center justify-center ${m ? `rarity-${m.rarity}` : ""}`}
                     style={{
                       background: "linear-gradient(180deg, #0c0c12, #050507)",
                       border: "1px solid var(--metal-dark)",
                       boxShadow: "inset 0 0 8px black",
                     }}>
                     {m ? (
-                      <div style={{ transform: "scale(0.72)" }}>
-                        <PixelGpu model={m} idx={ri * 4 + i} />
+                      <div style={{ transform: "scale(0.78)" }}>
+                        <PixelGpu model={m} idx={ri * 4 + i} heatPct={Math.min(1, m.heat / 70)} />
                       </div>
                     ) : (
                       <div className="font-pixel text-[8px] text-neon-cyan/40">EMPTY</div>
