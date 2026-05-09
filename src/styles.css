@@ -114,6 +114,16 @@
 @keyframes equalizer { 0%, 100% { height: 20%; } 25% { height: 80%; } 50% { height: 45%; } 75% { height: 95%; } }
 @keyframes dust-float { 0% { transform: translate(0,0); opacity: 0; } 30% { opacity: 0.5; } 100% { transform: translate(40px,-100px); opacity: 0; } }
 @keyframes spark { 0% { transform: translate(0,0) scale(1); opacity: 1; } 100% { transform: translate(var(--sx), var(--sy)) scale(0); opacity: 0; } }
+@keyframes float-up { 0% { transform: translateY(0) scale(1); opacity: 0; } 15% { opacity: 1; } 100% { transform: translateY(-90px) scale(1.1); opacity: 0; } }
+@keyframes pulse-num { 0%,100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+@keyframes screen-shake { 0%,100% { transform: translate(0,0); } 20% { transform: translate(-3px,2px); } 40% { transform: translate(3px,-2px); } 60% { transform: translate(-2px,-2px); } 80% { transform: translate(2px,2px); } }
+@keyframes radial-flash { 0% { opacity: 0.6; transform: scale(0.6); } 100% { opacity: 0; transform: scale(2); } }
+@keyframes spin-border { to { transform: rotate(360deg); } }
+@keyframes server-pulse { 0%,100% { box-shadow: 0 0 0 transparent; } 50% { box-shadow: 0 0 16px var(--neon-cyan), inset 0 0 12px color-mix(in oklab, var(--neon-cyan) 30%, transparent); } }
+@keyframes sway { 0%,100% { transform: rotate(-1deg); } 50% { transform: rotate(1.5deg); } }
+@keyframes steam { 0% { transform: translateY(0) scale(0.8); opacity: 0; } 25% { opacity: 0.6; } 100% { transform: translateY(-60px) scale(1.6); opacity: 0; } }
+@keyframes osc-fan { 0%,100% { transform: rotate(-25deg); } 50% { transform: rotate(25deg); } }
+@keyframes scan-sweep { 0% { transform: translateY(-110%); } 100% { transform: translateY(110%); } }
 
 .spin-fan { animation: spin-fast 0.8s linear infinite; transform-origin: 0 0; transform-box: view-box; }
 .spin-fan-slow { animation: spin-fast 3s linear infinite; transform-origin: 0 0; transform-box: view-box; }
@@ -221,3 +231,35 @@
 }
 
 .ticker-track { display: inline-flex; gap: 2.5rem; animation: ticker 60s linear infinite; white-space: nowrap; }
+
+.stat-primary { font-family: "Press Start 2P", monospace; font-size: 18px; letter-spacing: 0.04em; }
+.stat-secondary { font-family: "Press Start 2P", monospace; font-size: 12px; }
+.stat-muted { font-family: "VT323", monospace; font-size: 12px; color: var(--muted-foreground); }
+
+.shake { animation: screen-shake 250ms ease; }
+.pulse-num { animation: pulse-num 250ms ease; }
+.server-pulse { animation: server-pulse 1.6s ease-in-out infinite; }
+.scan-sweep::after {
+  content: ""; position: absolute; left: 0; right: 0; height: 30%; pointer-events: none;
+  background: linear-gradient(180deg, transparent, color-mix(in oklab, var(--neon-cyan) 22%, transparent), transparent);
+  animation: scan-sweep 6s linear infinite;
+}
+
+/* Rarity frames */
+.rarity-Common  { box-shadow: 0 0 0 1px #6c7a8c, inset 0 0 6px rgba(108,122,140,0.3); }
+.rarity-Rare    { box-shadow: 0 0 0 1px var(--neon-blue), inset 0 0 8px color-mix(in oklab, var(--neon-blue) 35%, transparent), 0 0 8px color-mix(in oklab, var(--neon-blue) 50%, transparent); }
+.rarity-Epic    { box-shadow: 0 0 0 1px var(--neon-purple), inset 0 0 10px color-mix(in oklab, var(--neon-purple) 35%, transparent), 0 0 10px color-mix(in oklab, var(--neon-purple) 60%, transparent); }
+.rarity-Legendary { box-shadow: 0 0 0 1px var(--neon-orange), inset 0 0 10px color-mix(in oklab, var(--neon-orange) 35%, transparent), 0 0 14px color-mix(in oklab, var(--neon-orange) 70%, transparent); }
+.rarity-Mythic  {
+  position: relative;
+  box-shadow: 0 0 0 1px var(--neon-cyan), inset 0 0 14px color-mix(in oklab, var(--neon-cyan) 40%, transparent), 0 0 18px color-mix(in oklab, var(--neon-cyan) 80%, transparent);
+}
+.rarity-Mythic::before {
+  content: ""; position: absolute; inset: -2px; pointer-events: none;
+  background: conic-gradient(from 0deg, var(--neon-cyan), var(--neon-purple), var(--neon-orange), var(--neon-green), var(--neon-cyan));
+  filter: blur(4px); opacity: 0.55; z-index: -1;
+  animation: spin-border 4s linear infinite;
+}
+
+.cable-sway { transform-origin: top center; animation: sway 3s ease-in-out infinite; }
+.osc-fan-blade { transform-origin: center; animation: osc-fan 2.4s ease-in-out infinite; }
