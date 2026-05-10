@@ -286,7 +286,7 @@ export function Coinminers() {
 
         {/* Center scene */}
         <main className="flex-1 p-3 min-w-0 relative min-h-[640px] lg:min-h-0 overflow-y-auto cyber-scroll">
-          <RoomScene owned={owned} hashrate={stats.finalHash} heat={stats.finalHeat} shelves={shelves} />
+          <RoomScene owned={owned.filter(g => g.equipped)} hashrate={stats.finalHash} heat={stats.finalHeat} shelves={shelves} />
         </main>
 
         {/* Right shop / panel */}
@@ -297,7 +297,8 @@ export function Coinminers() {
           ) : tab === "facilities" ? (
             <FacilityPanel btc={btc} current={facility} onPick={setFacility} />
           ) : tab === "gpus" ? (
-            <InventoryPanel owned={owned} shelves={shelves} shelfCost={shelfCost} btc={btc} onBuyShelf={buyShelf} />
+            <InventoryPanel owned={owned} shelves={shelves} shelfCost={shelfCost} btc={btc}
+              onBuyShelf={buyShelf} onEquip={equipGpu} onUnequip={unequipGpu} onSell={sellGpu} />
           ) : tab === "shop" || tab === "home" ? (
             <ShopPanel btc={btc} onBuy={buyGpu} capacity={shelfCapacity} owned={owned.length} />
           ) : tab === "research" ? (
