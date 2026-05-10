@@ -300,7 +300,7 @@ export function Coinminers() {
             <InventoryPanel owned={owned} shelves={shelves} shelfCost={shelfCost} btc={btc}
               onBuyShelf={buyShelf} onEquip={equipGpu} onUnequip={unequipGpu} onSell={sellGpu} />
           ) : tab === "shop" || tab === "home" ? (
-            <ShopPanel btc={btc} onBuy={buyGpu} capacity={shelfCapacity} owned={owned.length} />
+            <ShopPanel btc={btc} onBuy={buyGpu} capacity={shelfCapacity} owned={owned.filter(g=>g.equipped).length} stored={owned.filter(g=>!g.equipped).length} />
           ) : tab === "research" ? (
             <ResearchPanel btc={btc} levels={research} onBuy={buyResearch} />
           ) : tab === "missions" ? (
@@ -357,22 +357,22 @@ function Stat({ label, value, color }: { label: string; value: string; color: st
   );
 }
 
-function ShopPanel({ btc, onBuy, capacity, owned }: { btc: number; onBuy: (id: string, e: React.MouseEvent) => void; capacity: number; owned: number }) {
+function ShopPanel({ btc, onBuy, capacity, owned, stored }: { btc: number; onBuy: (id: string, e: React.MouseEvent) => void; capacity: number; owned: number; stored: number }) {
   const full = owned >= capacity;
   return (
     <div className="p-3 space-y-3">
       <div className="flex items-center justify-between">
         <h2 className="font-pixel text-[11px] text-neon-cyan">▶ HARDWARE SHOP</h2>
-        <span className="font-mono-pixel text-[12px] text-muted-foreground">slots {owned}/{capacity}</span>
+        <span className="font-mono-pixel text-[12px] text-muted-foreground">rigged {owned}/{capacity} · stored {stored}</span>
       </div>
       {full && (
-        <div className="px-2 py-1 font-pixel text-[9px] text-neon-red border border-[color:var(--neon-red)]"
-          style={{ background: "rgba(40,5,5,0.5)" }}>
-          ⚠ SHELVES FULL — buy a shelf in GPUs tab
+        <div className="px-2 py-1 font-pixel text-[9px] text-neon-orange border border-[color:var(--neon-orange)]"
+          style={{ background: "rgba(40,20,5,0.5)" }}>
+          ⚠ SHELVES FULL — new GPUs go to STORAGE
         </div>
       )}
       {GPU_MODELS.map(m => {
-        const can = btc >= m.basePrice && !full;
+        const can = btc >= m.basePrice;
         return (
           <div key={m.id} className={`metal-panel p-2 relative overflow-hidden rarity-${m.rarity}`}>
             <div className="absolute top-0 right-0 px-1.5 py-0.5 font-pixel text-[8px]"
