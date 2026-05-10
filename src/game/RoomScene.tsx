@@ -177,88 +177,11 @@ export function RoomScene({ owned, hashrate, heat, shelves = 2, facility = "gara
       {/* Tall vertical wall of separate shelves — scrolls if many */}
       <div className="absolute left-[46%] right-2 top-2 bottom-20 overflow-y-auto cyber-scroll z-10"
         style={{ scrollbarGutter: "stable" }}>
-        <div className="flex flex-col gap-5 py-2 pr-2">
+        <div className="flex flex-col gap-6 py-2 pr-2">
           {Array.from({ length: shelves }).map((_, si) => {
             const row = filled.slice(si * perShelf, si * perShelf + perShelf);
-            const ledColor = ["#ff3da6","#3df0ff","#aaff3d","#ff9d3d","#c93dff","#3dff8c"][si % 6];
-            const filledCount = row.length;
-            return (
-              <div key={si} className={`relative ${filledCount > 0 ? "server-pulse" : ""}`} style={{ marginLeft: 14, marginRight: 14 }}>
-                {/* Vertical bracket bars connecting to ceiling */}
-                <div className="absolute -left-3 -top-6 bottom-0 w-2"
-                  style={{ background: "linear-gradient(180deg, var(--metal-light), var(--metal-dark))",
-                           boxShadow: "1px 0 0 #000, inset -1px 0 0 #000" }} />
-                <div className="absolute -right-3 -top-6 bottom-0 w-2"
-                  style={{ background: "linear-gradient(180deg, var(--metal-light), var(--metal-dark))",
-                           boxShadow: "-1px 0 0 #000, inset 1px 0 0 #000" }} />
-                {/* Bolt heads */}
-                <div className="absolute -left-3 -top-6 w-2 h-2" style={{ background: "#888", boxShadow: "inset 0 0 0 1px #000" }} />
-                <div className="absolute -right-3 -top-6 w-2 h-2" style={{ background: "#888", boxShadow: "inset 0 0 0 1px #000" }} />
-
-                {/* Back wall behind shelf */}
-                <div className="absolute inset-0 -top-1 -bottom-1"
-                  style={{
-                    background: "repeating-linear-gradient(0deg, rgba(0,0,0,0.4) 0 2px, transparent 2px 6px)",
-                    border: "1px solid var(--metal-dark)",
-                  }} />
-
-                {/* GPU row */}
-                <div className="relative grid gap-2 px-2 pt-2 pb-0"
-                  style={{ gridTemplateColumns: `repeat(${perShelf}, minmax(0,1fr))` }}>
-                  {Array.from({ length: perShelf }).map((_, i) => {
-                    const g = row[i];
-                    const model = g ? GPU_MODELS.find(m => m.id === g.modelId) : null;
-                    return (
-                      <div key={i} className="relative h-[72px] flex items-end justify-center"
-                        style={{
-                          background: "linear-gradient(180deg, rgba(0,0,0,0.55), rgba(0,0,0,0.2))",
-                          border: "1px solid var(--metal-dark)",
-                        }}>
-                        {model ? (
-                          <div style={{ transform: "scale(0.66)", transformOrigin: "bottom center" }}>
-                            <PixelGpu model={model} idx={si * perShelf + i} />
-                          </div>
-                        ) : (
-                          <div className="text-[9px] font-pixel text-neon-cyan/30 mb-3">EMPTY</div>
-                        )}
-                        <div className="absolute top-0.5 left-0.5 text-[8px] font-pixel text-neon-cyan/60">
-                          {String(si * perShelf + i + 1).padStart(2, "0")}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Pixel plank with RGB underglow */}
-                <div className="h-4 relative mt-px"
-                  style={{
-                    background: "repeating-linear-gradient(90deg, #5a3a1c 0 6px, #4a2f17 6px 12px, #6a4520 12px 18px, #3a2410 18px 24px)",
-                    borderTop: "2px solid #2a1808",
-                    borderBottom: "3px solid #100804",
-                    boxShadow: "inset 0 1px 0 #8a5a30",
-                    imageRendering: "pixelated",
-                  }}>
-                  <div className="absolute -bottom-1 left-1 right-1 h-1"
-                    style={{
-                      background: ledColor,
-                      boxShadow: `0 0 ${6 + filledCount * 3}px ${ledColor}, 0 0 ${12 + filledCount * 4}px ${ledColor}`,
-                      opacity: 0.5 + filledCount * 0.12,
-                    }} />
-                </div>
-
-                {/* Shelf label tag */}
-                <div className="absolute -left-3 -top-2 px-1.5 py-0.5 font-pixel text-[8px]"
-                  style={{ background: "#0a0a0e", color: ledColor, border: `1px solid ${ledColor}`, boxShadow: `0 0 6px ${ledColor}` }}>
-                  SHELF·{String(si + 1).padStart(2, "0")}
-                </div>
-
-                {/* Status LEDs on right */}
-                <div className="absolute -right-3 top-2 flex flex-col gap-1.5">
-                  <span className="led-blink w-1.5 h-1.5" style={{ background: "var(--neon-green)", boxShadow: "0 0 4px var(--neon-green)" }} />
-                  <span className="led-blink w-1.5 h-1.5" style={{ background: "var(--neon-orange)", boxShadow: "0 0 4px var(--neon-orange)", animationDelay: "0.3s" }} />
-                </div>
-              </div>
-            );
+            const padded: (OwnedGpu | undefined)[] = Array.from({ length: perShelf }, (_, i) => row[i]);
+            return <MiningRack key={si} index={si} perShelf={perShelf} row={padded} tier={tier} />;
           })}
         </div>
       </div>
