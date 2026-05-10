@@ -286,7 +286,7 @@ export function Coinminers() {
 
         {/* Center scene */}
         <main className="flex-1 p-3 min-w-0 relative min-h-[640px] lg:min-h-0 overflow-y-auto cyber-scroll">
-          <RoomScene owned={owned.filter(g => g.equipped)} hashrate={stats.finalHash} heat={stats.finalHeat} shelves={shelves} />
+          <RoomScene owned={owned.filter(g => g.equipped)} hashrate={stats.finalHash} heat={stats.finalHeat} shelves={shelves} facility={facility} />
         </main>
 
         {/* Right shop / panel */}
