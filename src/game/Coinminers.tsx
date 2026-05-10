@@ -160,7 +160,7 @@ export function Coinminers() {
   const currentFacility = FACILITIES.find(f => f.id === facility)!;
 
   return (
-    <div className={`relative min-h-screen w-screen overflow-x-hidden text-foreground flex flex-col ${shake ? "shake" : ""}`}
+    <div className={`relative h-screen w-screen overflow-hidden text-foreground flex flex-col ${shake ? "shake" : ""}`}
       style={{ background: "radial-gradient(ellipse at center top, #1a1828, #0a0a12 70%)" }}>
       {/* Top HUD bar */}
       <header className="relative z-30 flex items-stretch flex-wrap border-b border-[color:var(--metal-light)] shrink-0"
@@ -242,7 +242,7 @@ export function Coinminers() {
       )}
 
       {/* Body */}
-      <div className="flex flex-col lg:flex-row flex-1 min-h-0">
+      <div className="flex flex-col lg:flex-row flex-1 min-h-0 overflow-hidden">
         {/* Sidebar */}
         <aside className="w-full lg:w-[180px] flex lg:flex-col gap-1 p-2 border-b lg:border-b-0 lg:border-r border-[color:var(--metal-light)] overflow-x-auto cyber-scroll shrink-0"
           style={{ background: "linear-gradient(180deg, #14141d, #0a0a12)" }}>
@@ -262,12 +262,12 @@ export function Coinminers() {
         </aside>
 
         {/* Center scene */}
-        <main className="flex-1 p-3 min-w-0 relative min-h-[640px] lg:min-h-0">
+        <main className="flex-1 p-3 min-w-0 relative min-h-[640px] lg:min-h-0 overflow-y-auto cyber-scroll">
           <RoomScene owned={owned} hashrate={stats.finalHash} heat={stats.finalHeat} shelves={shelves} />
         </main>
 
         {/* Right shop / panel */}
-        <aside className="w-full lg:w-[360px] border-t lg:border-t-0 lg:border-l border-[color:var(--metal-light)] overflow-y-auto cyber-scroll max-h-[60vh] lg:max-h-none"
+        <aside className="w-full lg:w-[360px] border-t lg:border-t-0 lg:border-l border-[color:var(--metal-light)] overflow-y-auto cyber-scroll max-h-[55vh] lg:max-h-none lg:h-full"
           style={{ background: "linear-gradient(180deg, #14141d, #0a0a12)" }}>
           {tab === "upgrades" ? (
             <UpgradePanel btc={btc} levels={upgrades} onBuy={buyUpgrade} />
