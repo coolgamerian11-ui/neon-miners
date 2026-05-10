@@ -1,7 +1,5 @@
 import { useMemo } from "react";
 import type { OwnedGpu } from "./types";
-import { GPU_MODELS } from "./data";
-import { PixelGpu } from "./PixelGpu";
 import { Ambience } from "./Ambience";
 import { Clutter } from "./Clutter";
 import { MiningRack, type RackTier } from "./MiningRack";
