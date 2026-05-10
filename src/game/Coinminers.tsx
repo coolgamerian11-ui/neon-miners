@@ -160,7 +160,7 @@ export function Coinminers() {
   const currentFacility = FACILITIES.find(f => f.id === facility)!;
 
   return (
-    <div className={`relative min-h-screen w-screen overflow-x-hidden text-foreground flex flex-col ${shake ? "shake" : ""}`}
+    <div className={`relative h-screen w-screen overflow-hidden text-foreground flex flex-col ${shake ? "shake" : ""}`}
       style={{ background: "radial-gradient(ellipse at center top, #1a1828, #0a0a12 70%)" }}>
       {/* Top HUD bar */}
       <header className="relative z-30 flex items-stretch flex-wrap border-b border-[color:var(--metal-light)] shrink-0"
