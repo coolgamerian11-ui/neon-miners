@@ -4,15 +4,20 @@ import { GPU_MODELS } from "./data";
 import { PixelGpu } from "./PixelGpu";
 import { Ambience } from "./Ambience";
 import { Clutter } from "./Clutter";
+import { MiningRack, type RackTier } from "./MiningRack";
 
 /** Garage / facility room with deep environmental detail */
-export function RoomScene({ owned, hashrate, heat, shelves = 2 }:
-  { owned: OwnedGpu[]; hashrate: number; heat: number; shelves?: number }) {
+export function RoomScene({ owned, hashrate, heat, shelves = 2, facility = "garage" }:
+  { owned: OwnedGpu[]; hashrate: number; heat: number; shelves?: number; facility?: string }) {
   const perShelf = 4;
   const slots = shelves * perShelf;
   const filled = owned.slice(0, slots);
   const cableThickness = Math.min(6, 2 + owned.length * 0.15);
   const serverBlades = Math.min(40, 8 + Math.floor(hashrate * 0.2));
+  const tier: RackTier =
+    facility === "garage" || facility === "basement" ? "starter"
+    : facility === "warehouse" || facility === "vault" ? "mid"
+    : "endgame";
   const dust = useMemo(() => Array.from({ length: 18 }, (_, i) => ({
     x: Math.random() * 100, y: Math.random() * 100, d: Math.random() * 6, s: 4 + Math.random() * 6, key: i,
   })), []);
