@@ -26,7 +26,7 @@ const RARITY_COLOR: Record<string, string> = {
 export function Coinminers() {
   const [btc, setBtc] = useState(0.05);
   const [owned, setOwned] = useState<OwnedGpu[]>([
-    { id: "g1", modelId: "gtx750" },
+    { id: "g1", modelId: "gtx750", equipped: true },
   ]);
   const [upgrades, setUpgrades] = useState<Record<string, number>>({});
   const [facility, setFacility] = useState("garage");
@@ -75,7 +75,8 @@ export function Coinminers() {
   // Derived stats
   const stats = useMemo(() => {
     let hash = 0, power = 0, heat = 0;
-    for (const g of owned) {
+    const equipped = owned.filter(g => g.equipped);
+    for (const g of equipped) {
       const m = GPU_MODELS.find(x => x.id === g.modelId)!;
       hash += m.hashrate;
       power += m.power;
@@ -136,14 +137,36 @@ export function Coinminers() {
   function buyGpu(modelId: string, e?: React.MouseEvent) {
     const m = GPU_MODELS.find(x => x.id === modelId)!;
     if (btc < m.basePrice) return;
-    if (owned.length >= shelfCapacity) return;
     setBtc(b => b - m.basePrice);
-    setOwned(o => [...o, { id: `g${Date.now()}-${Math.random()}`, modelId }]);
+    setOwned(o => {
+      const equippedCount = o.filter(x => x.equipped).length;
+      const canEquip = equippedCount < shelfCapacity;
+      return [...o, { id: `g${Date.now()}-${Math.random()}`, modelId, equipped: canEquip }];
+    });
     if (e) {
       const id = ++floatId.current;
       setFloats(f => [...f, { id, x: e.clientX, y: e.clientY, v: 1 }]);
       setTimeout(() => setFloats(f => f.filter(x => x.id !== id)), 1000);
     }
+  }
+
+  function unequipGpu(id: string) {
+    setOwned(o => o.map(g => g.id === id ? { ...g, equipped: false } : g));
+  }
+  function equipGpu(id: string) {
+    setOwned(o => {
+      const equippedCount = o.filter(x => x.equipped).length;
+      if (equippedCount >= shelfCapacity) return o;
+      return o.map(g => g.id === id ? { ...g, equipped: true } : g);
+    });
+  }
+  function sellGpu(id: string) {
+    const g = owned.find(x => x.id === id);
+    if (!g) return;
+    const m = GPU_MODELS.find(x => x.id === g.modelId);
+    if (!m) return;
+    setBtc(b => b + m.basePrice * 0.5);
+    setOwned(o => o.filter(x => x.id !== id));
   }
 
   function buyUpgrade(id: string) {
