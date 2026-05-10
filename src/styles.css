@@ -263,3 +263,8 @@
 
 .cable-sway { transform-origin: top center; animation: sway 3s ease-in-out infinite; }
 .osc-fan-blade { transform-origin: center; animation: osc-fan 2.4s ease-in-out infinite; }
+
+/* MiningRack helpers */
+@keyframes fan-spin-css { to { transform: rotate(360deg); } }
+.fan-spin > div:first-child { animation: fan-spin-css 1.2s linear infinite; transform-origin: 50% 50%; }
+@keyframes pulse-soft { 0%,100% { opacity: 0.5; } 50% { opacity: 1; } }
