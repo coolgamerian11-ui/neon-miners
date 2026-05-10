@@ -485,16 +485,25 @@ function FacilityPanel({ btc, current, onPick }: { btc: number; current: string;
   );
 }
 
-function InventoryPanel({ owned, shelves: shelvesCount, shelfCost, btc, onBuyShelf }:
-  { owned: OwnedGpu[]; shelves: number; shelfCost: number; btc: number; onBuyShelf: () => void }) {
-  const shelves: OwnedGpu[][] = [];
-  for (let s = 0; s < shelvesCount; s++) shelves.push(owned.slice(s * 4, s * 4 + 4));
+function InventoryPanel({ owned, shelves: shelvesCount, shelfCost, btc, onBuyShelf, onEquip, onUnequip, onSell }:
+  { owned: OwnedGpu[]; shelves: number; shelfCost: number; btc: number; onBuyShelf: () => void;
+    onEquip: (id: string) => void; onUnequip: (id: string) => void; onSell: (id: string) => void }) {
+  const equipped = owned.filter(g => g.equipped);
+  const storage = owned.filter(g => !g.equipped);
+  const capacity = shelvesCount * 4;
+  const shelves: (OwnedGpu | undefined)[][] = [];
+  for (let s = 0; s < shelvesCount; s++) {
+    const row: (OwnedGpu | undefined)[] = [];
+    for (let i = 0; i < 4; i++) row.push(equipped[s * 4 + i]);
+    shelves.push(row);
+  }
   const can = btc >= shelfCost;
+  const slotsFull = equipped.length >= capacity;
   return (
     <div className="p-3 space-y-3">
       <div className="flex items-center justify-between">
         <h2 className="font-pixel text-[11px] text-neon-green">▦ GPU INVENTORY</h2>
-        <span className="font-mono-pixel text-[12px] text-muted-foreground">{owned.length}/{shelvesCount * 4}</span>
+        <span className="font-mono-pixel text-[12px] text-muted-foreground">rigged {equipped.length}/{capacity} · stored {storage.length}</span>
       </div>
       <div className="metal-panel p-2 flex items-center justify-between">
         <div>
@@ -512,23 +521,32 @@ function InventoryPanel({ owned, shelves: shelvesCount, shelfCost, btc, onBuyShe
           <div className="metal-panel p-2">
             <div className="flex items-center justify-between mb-1">
               <span className="font-pixel text-[9px] text-neon-cyan">SHELF {String(ri + 1).padStart(2, "0")}</span>
-              <span className="font-mono-pixel text-[11px] text-muted-foreground">{row.length}/4</span>
+              <span className="font-mono-pixel text-[11px] text-muted-foreground">{row.filter(Boolean).length}/4</span>
             </div>
             <div className="grid grid-cols-2 gap-2">
               {Array.from({ length: 4 }).map((_, i) => {
                 const g = row[i];
                 const m = g ? GPU_MODELS.find(x => x.id === g.modelId) : null;
                 return (
-                  <div key={i} className={`relative h-[100px] flex items-center justify-center ${m ? `rarity-${m.rarity}` : ""}`}
+                  <div key={i} className={`group relative h-[100px] flex items-center justify-center ${m ? `rarity-${m.rarity}` : ""}`}
                     style={{
                       background: "linear-gradient(180deg, #0c0c12, #050507)",
                       border: "1px solid var(--metal-dark)",
                       boxShadow: "inset 0 0 8px black",
                     }}>
                     {m ? (
-                      <div style={{ transform: "scale(0.78)" }}>
-                        <PixelGpu model={m} idx={ri * 4 + i} heatPct={Math.min(1, m.heat / 70)} />
-                      </div>
+                      <>
+                        <div style={{ transform: "scale(0.78)" }}>
+                          <PixelGpu model={m} idx={ri * 4 + i} heatPct={Math.min(1, m.heat / 70)} />
+                        </div>
+                        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1"
+                          style={{ background: "rgba(0,0,0,0.78)" }}>
+                          <button onClick={() => onUnequip(g!.id)}
+                            className="btn-cyber px-2 py-1 font-pixel text-[8px] rounded-sm text-neon-orange">UNRIG</button>
+                          <button onClick={() => onSell(g!.id)}
+                            className="btn-cyber px-2 py-1 font-pixel text-[8px] rounded-sm text-neon-red">SELL</button>
+                        </div>
+                      </>
                     ) : (
                       <div className="font-pixel text-[8px] text-neon-cyan/40">EMPTY</div>
                     )}
@@ -556,6 +574,52 @@ function InventoryPanel({ owned, shelves: shelvesCount, shelfCost, btc, onBuyShe
           <div className="absolute right-0 top-2 bottom-2 w-1" style={{ background: "var(--metal-mid)" }} />
         </div>
       ))}
+
+      {/* Storage / unrigged inventory */}
+      <div className="metal-panel p-2">
+        <div className="flex items-center justify-between mb-2">
+          <span className="font-pixel text-[10px] text-neon-purple">▣ STORAGE</span>
+          <span className="font-mono-pixel text-[11px] text-muted-foreground">{storage.length} unrigged</span>
+        </div>
+        {storage.length === 0 ? (
+          <div className="text-center py-3 font-pixel text-[8px] text-neon-cyan/40">
+            NO UNRIGGED GPUS · unrig from a shelf to store
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-2">
+            {storage.map(g => {
+              const m = GPU_MODELS.find(x => x.id === g.modelId);
+              if (!m) return null;
+              return (
+                <div key={g.id} className={`relative p-1 rarity-${m.rarity}`}
+                  style={{
+                    background: "linear-gradient(180deg, #0c0c12, #050507)",
+                    border: "1px solid var(--metal-dark)",
+                  }}>
+                  <div className="flex items-center justify-center h-[68px]">
+                    <div style={{ transform: "scale(0.55)" }}>
+                      <PixelGpu model={m} idx={0} heatPct={Math.min(1, m.heat / 70)} />
+                    </div>
+                  </div>
+                  <div className="font-mono-pixel text-[10px] text-neon-cyan truncate text-center mb-1">{m.name}</div>
+                  <div className="flex gap-1">
+                    <button onClick={() => onEquip(g.id)} disabled={slotsFull}
+                      className="btn-buy flex-1 px-1 py-1 font-pixel text-[8px] rounded-sm">RIG</button>
+                    <button onClick={() => onSell(g.id)}
+                      className="btn-cyber px-2 py-1 font-pixel text-[8px] rounded-sm text-neon-red">SELL</button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+        {slotsFull && storage.length > 0 && (
+          <div className="mt-2 px-2 py-1 font-pixel text-[8px] text-neon-orange border border-[color:var(--neon-orange)]"
+            style={{ background: "rgba(40,20,5,0.5)" }}>
+            ⚠ shelves full — unrig or buy a shelf to deploy
+          </div>
+        )}
+      </div>
     </div>
   );
 }
