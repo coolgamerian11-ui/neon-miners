@@ -23,20 +23,52 @@ const RARITY_COLOR: Record<string, string> = {
   Mythic: "var(--neon-cyan)",
 };
 
+const SAVE_KEY = "coinminers.save.v2";
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+interface SaveState {
+  btc: number;
+  owned: OwnedGpu[];
+  upgrades: Record<string, number>;
+  facility: string;
+  shelves: number;
+  research: Record<string, number>;
+  claimed: Record<string, boolean>;
+  prestige: number;
+  totalEarned: number;
+  lastDaily: number;
+  dailyStreak: number;
+  lastPlayed: number;
+}
+
+function loadSave(): Partial<SaveState> | null {
+  try {
+    const raw = typeof window !== "undefined" ? localStorage.getItem(SAVE_KEY) : null;
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch { return null; }
+}
+
 export function Coinminers() {
-  const [btc, setBtc] = useState(0.05);
-  const [owned, setOwned] = useState<OwnedGpu[]>([
+  const initial = typeof window !== "undefined" ? loadSave() : null;
+  const [btc, setBtc] = useState<number>(initial?.btc ?? 0.05);
+  const [owned, setOwned] = useState<OwnedGpu[]>(initial?.owned ?? [
     { id: "g1", modelId: "gtx750", equipped: true },
   ]);
-  const [upgrades, setUpgrades] = useState<Record<string, number>>({});
-  const [facility, setFacility] = useState("garage");
+  const [upgrades, setUpgrades] = useState<Record<string, number>>(initial?.upgrades ?? {});
+  const [facility, setFacility] = useState<string>(initial?.facility ?? "garage");
   const [tab, setTab] = useState<string>("home");
   const [floats, setFloats] = useState<Array<{ id: number; x: number; y: number; v: number }>>([]);
   const floatId = useRef(0);
   const [marketPrice, setMarketPrice] = useState(67432);
-  const [shelves, setShelves] = useState(2);
-  const [research, setResearch] = useState<Record<string, number>>({});
-  const [claimed, setClaimed] = useState<Record<string, boolean>>({});
+  const [shelves, setShelves] = useState<number>(initial?.shelves ?? 2);
+  const [research, setResearch] = useState<Record<string, number>>(initial?.research ?? {});
+  const [claimed, setClaimed] = useState<Record<string, boolean>>(initial?.claimed ?? {});
+  const [prestige, setPrestige] = useState<number>(initial?.prestige ?? 0);
+  const [totalEarned, setTotalEarned] = useState<number>(initial?.totalEarned ?? 0);
+  const [lastDaily, setLastDaily] = useState<number>(initial?.lastDaily ?? 0);
+  const [dailyStreak, setDailyStreak] = useState<number>(initial?.dailyStreak ?? 0);
+  const [offlineEarn, setOfflineEarn] = useState<number | null>(null);
   const [shake, setShake] = useState(false);
   const [pulseTick, setPulseTick] = useState(0);
   const [tickFloats, setTickFloats] = useState<Array<{ id: number; v: number }>>([]);
@@ -44,11 +76,15 @@ export function Coinminers() {
   const blockProgressRef = useRef(0);
   const [blockProgress, setBlockProgress] = useState(0);
 
-  const shelfCapacity = shelves * 4;
-  const shelfCost = 0.02 * Math.pow(1.8, shelves - 2);
+  const currentFacility = FACILITIES.find(f => f.id === facility)!;
+  const maxShelves = Math.floor(currentFacility.capacity / 4);
+  const shelfCapacity = Math.min(shelves * 4, currentFacility.capacity);
+  const shelfCost = 0.02 * Math.pow(1.55, shelves - 2);
+  const facilityMult = currentFacility.mult ?? 1;
+  const prestigeMult = 1 + prestige * 0.25;
 
   function buyShelf() {
-    if (btc < shelfCost) return;
+    if (btc < shelfCost || shelves >= maxShelves) return;
     setBtc(b => b - shelfCost);
     setShelves(s => s + 1);
     triggerShake();
@@ -63,8 +99,46 @@ export function Coinminers() {
   function claimMission(id: string, reward: number) {
     if (claimed[id]) return;
     setClaimed(c => ({ ...c, [id]: true }));
-    setBtc(b => b + reward);
+    addBtc(reward);
     triggerShake();
+  }
+
+  function addBtc(n: number) {
+    setBtc(b => b + n);
+    if (n > 0) setTotalEarned(t => t + n);
+  }
+
+  function claimDaily() {
+    const now = Date.now();
+    if (now - lastDaily < DAY_MS) return;
+    const streak = (now - lastDaily < DAY_MS * 2) ? Math.min(7, dailyStreak + 1) : 1;
+    const reward = 0.02 * Math.pow(1.8, streak - 1) * (1 + prestige * 0.5);
+    addBtc(reward);
+    setLastDaily(now);
+    setDailyStreak(streak);
+    triggerShake();
+  }
+
+  function doPrestige() {
+    // require enough lifetime earnings to gain at least 1 point
+    const gain = Math.floor(Math.sqrt(totalEarned / 10));
+    if (gain < 1) return;
+    if (!confirm(`Prestige now? You will gain +${gain} prestige (+${gain * 25}% permanent income) but reset BTC, GPUs, shelves, upgrades & research.`)) return;
+    setPrestige(p => p + gain);
+    setBtc(0.05);
+    setOwned([{ id: "g1", modelId: "gtx750", equipped: true }]);
+    setUpgrades({});
+    setShelves(2);
+    setResearch({});
+    setFacility("garage");
+    setTotalEarned(0);
+    triggerShake();
+  }
+
+  function resetSave() {
+    if (!confirm("Wipe ALL progress? This cannot be undone.")) return;
+    try { localStorage.removeItem(SAVE_KEY); } catch {}
+    window.location.reload();
   }
 
   function triggerShake() {
@@ -88,28 +162,33 @@ export function Coinminers() {
     const psuLvl = upgrades["psu"] ?? 0;
     const netLvl = upgrades["net"] ?? 0;
     const aiLvl = upgrades["ai"] ?? 0;
+    const immLvl = upgrades["imm"] ?? 0;
+    const solarLvl = upgrades["solar"] ?? 0;
+    const swarmLvl = upgrades["swarm"] ?? 0;
+    const quantLvl = upgrades["quant"] ?? 0;
 
-    const hashMult = 1 + fwLvl * 0.10 + coolLvl * 0.15 + overLvl * 0.20 + aiLvl * 0.25;
-    const rewardMult = 1 + netLvl * 0.05;
+    const hashMult = 1 + fwLvl * 0.10 + coolLvl * 0.15 + overLvl * 0.20 + aiLvl * 0.25
+                       + immLvl * 0.30 + quantLvl * 0.50;
+    const rewardMult = (1 + netLvl * 0.05) * (1 + swarmLvl * 0.15) * facilityMult * prestigeMult;
     const finalHash = hash * hashMult;
-    const finalPower = power * Math.max(0.2, 1 - psuLvl * 0.08);
-    const finalHeat = Math.max(15, heat * (1 - coolLvl * 0.04) + overLvl * 5 + 20);
-    // BTC per second (small numbers, balanced)
-    const btcPerSec = (finalHash * 0.000004 + 0.0000005) * rewardMult;
+    const finalPower = power * Math.max(0.15, 1 - psuLvl * 0.08 - solarLvl * 0.12);
+    const finalHeat = Math.max(15, heat * (1 - coolLvl * 0.04 - immLvl * 0.05) + overLvl * 5 + 20);
+    // BTC per second — easier early-game progression
+    const btcPerSec = (finalHash * 0.00003 + 0.000005) * rewardMult;
     const efficiency = finalPower > 0 ? Math.min(100, (finalHash / finalPower) * 6) : 0;
     return { finalHash, finalPower, finalHeat, btcPerSec, efficiency };
-  }, [owned, upgrades]);
+  }, [owned, upgrades, facilityMult, prestigeMult]);
 
   // Idle income
   useEffect(() => {
     const t = setInterval(() => {
       const inc = stats.btcPerSec / 5;
-      setBtc(b => b + inc);
+      addBtc(inc);
       setPulseTick(p => p + 1);
       blockProgressRef.current = (blockProgressRef.current + 1) % 50;
       setBlockProgress(blockProgressRef.current);
       // spawn floating tick number occasionally
-      if (Math.random() < 0.4 && inc > 0) {
+      if (Math.random() < 0.25 && inc > 0) {
         const id = ++tickFloatId.current;
         setTickFloats(f => [...f, { id, v: inc * 5 }]);
         setTimeout(() => setTickFloats(f => f.filter(x => x.id !== id)), 1400);
@@ -117,6 +196,35 @@ export function Coinminers() {
     }, 200);
     return () => clearInterval(t);
   }, [stats.btcPerSec]);
+
+  // Offline earnings on mount
+  useEffect(() => {
+    if (!initial?.lastPlayed) return;
+    const dt = Math.min((Date.now() - initial.lastPlayed) / 1000, 8 * 3600); // cap 8h
+    if (dt < 30) return;
+    const earned = stats.btcPerSec * dt * 0.5; // 50% efficiency offline
+    if (earned > 0.0001) {
+      addBtc(earned);
+      setOfflineEarn(earned);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Auto-save (debounced via interval)
+  useEffect(() => {
+    const save = () => {
+      try {
+        const data: SaveState = {
+          btc, owned, upgrades, facility, shelves, research, claimed,
+          prestige, totalEarned, lastDaily, dailyStreak, lastPlayed: Date.now(),
+        };
+        localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+      } catch {}
+    };
+    const t = setInterval(save, 4000);
+    window.addEventListener("beforeunload", save);
+    return () => { clearInterval(t); save(); window.removeEventListener("beforeunload", save); };
+  }, [btc, owned, upgrades, facility, shelves, research, claimed, prestige, totalEarned, lastDaily, dailyStreak]);
 
   // Market ticker fluctuation
   useEffect(() => {
@@ -165,7 +273,7 @@ export function Coinminers() {
     if (!g) return;
     const m = GPU_MODELS.find(x => x.id === g.modelId);
     if (!m) return;
-    setBtc(b => b + m.basePrice * 0.5);
+    setBtc(b => b + m.basePrice * 0.6);
     setOwned(o => o.filter(x => x.id !== id));
   }
 
@@ -179,8 +287,6 @@ export function Coinminers() {
     setUpgrades(u2 => ({ ...u2, [id]: lvl + 1 }));
     triggerShake();
   }
-
-  const currentFacility = FACILITIES.find(f => f.id === facility)!;
 
   return (
     <div className={`relative h-screen w-screen overflow-hidden text-foreground flex flex-col ${shake ? "shake" : ""}`}
@@ -305,6 +411,10 @@ export function Coinminers() {
             <ResearchPanel btc={btc} levels={research} onBuy={buyResearch} />
           ) : tab === "missions" ? (
             <MissionsPanel btc={btc} owned={owned.length} hashrate={stats.finalHash} upgradesCount={Object.values(upgrades).reduce((a,b)=>a+b,0)} claimed={claimed} onClaim={claimMission} />
+          ) : tab === "prestige" ? (
+            <PrestigePanel prestige={prestige} totalEarned={totalEarned} onPrestige={doPrestige} onReset={resetSave} />
+          ) : tab === "daily" ? (
+            <DailyPanel lastDaily={lastDaily} streak={dailyStreak} prestige={prestige} onClaim={claimDaily} />
           ) : (
             <ComingSoonPanel name={SIDEBAR.find(s => s.id === tab)?.label ?? "Section"} />
           )}
@@ -320,13 +430,27 @@ export function Coinminers() {
         <span className="text-muted-foreground">|</span>
         <span className="text-neon-orange">UPGRADES {Object.values(upgrades).reduce((a,b)=>a+b,0)}</span>
         <span className="text-muted-foreground">|</span>
-        <span className="text-neon-purple">PRESTIGE Lv.0</span>
+        <span className="text-neon-purple">PRESTIGE Lv.{prestige}</span>
+        <span className="text-muted-foreground">|</span>
+        <span className="text-neon-green">×{(facilityMult * prestigeMult).toFixed(2)} mult</span>
         <span className="text-muted-foreground">|</span>
         <span className="text-neon-green">NET 1.2 Gbps</span>
         <span className="text-muted-foreground">|</span>
         <span className="text-neon-cyan">POOL: NeonPool</span>
         <span className="ml-auto text-muted-foreground">CPU 22% · MEM 1.4G · UPTIME 04:21:55</span>
       </div>
+
+      {/* Offline earnings popup */}
+      {offlineEarn !== null && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/70" onClick={() => setOfflineEarn(null)}>
+          <div className="metal-panel p-6 max-w-sm text-center neon-frame" onClick={e => e.stopPropagation()}>
+            <div className="font-pixel text-[14px] text-neon-cyan mb-2">◉ WELCOME BACK</div>
+            <div className="font-mono-pixel text-[14px] text-muted-foreground mb-3">Your rigs kept mining (50% offline rate, capped at 8h).</div>
+            <div className="font-pixel text-[18px] btc-text pulse-glow mb-4">+₿{fmtBtc(offlineEarn)}</div>
+            <button onClick={() => setOfflineEarn(null)} className="btn-buy px-4 py-2 font-pixel text-[10px]">COLLECT ▶</button>
+          </div>
+        </div>
+      )}
 
       {/* Floating BTC pickups */}
       {floats.map(f => (
