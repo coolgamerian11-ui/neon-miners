@@ -50,28 +50,26 @@ function loadSave(): Partial<SaveState> | null {
 }
 
 export function Coinminers() {
-  const initialRef = useRef<Partial<SaveState> | null>(null);
-  if (initialRef.current === null && typeof window !== "undefined") {
-    initialRef.current = loadSave();
-  }
-  const initial = initialRef.current;
-  const [btc, setBtc] = useState<number>(initial?.btc ?? 0.05);
-  const [owned, setOwned] = useState<OwnedGpu[]>(initial?.owned ?? [
+  // Defaults only on first render to keep SSR & client identical (avoids hydration mismatch).
+  // Save is loaded inside an effect after mount.
+  const [hydrated, setHydrated] = useState(false);
+  const [btc, setBtc] = useState<number>(0.05);
+  const [owned, setOwned] = useState<OwnedGpu[]>([
     { id: "g1", modelId: "gtx750", equipped: true },
   ]);
-  const [upgrades, setUpgrades] = useState<Record<string, number>>(initial?.upgrades ?? {});
-  const [facility, setFacility] = useState<string>(initial?.facility ?? "garage");
+  const [upgrades, setUpgrades] = useState<Record<string, number>>({});
+  const [facility, setFacility] = useState<string>("garage");
   const [tab, setTab] = useState<string>("home");
   const [floats, setFloats] = useState<Array<{ id: number; x: number; y: number; v: number }>>([]);
   const floatId = useRef(0);
   const [marketPrice, setMarketPrice] = useState(67432);
-  const [shelves, setShelves] = useState<number>(initial?.shelves ?? 2);
-  const [research, setResearch] = useState<Record<string, number>>(initial?.research ?? {});
-  const [claimed, setClaimed] = useState<Record<string, boolean>>(initial?.claimed ?? {});
-  const [prestige, setPrestige] = useState<number>(initial?.prestige ?? 0);
-  const [totalEarned, setTotalEarned] = useState<number>(initial?.totalEarned ?? 0);
-  const [lastDaily, setLastDaily] = useState<number>(initial?.lastDaily ?? 0);
-  const [dailyStreak, setDailyStreak] = useState<number>(initial?.dailyStreak ?? 0);
+  const [shelves, setShelves] = useState<number>(2);
+  const [research, setResearch] = useState<Record<string, number>>({});
+  const [claimed, setClaimed] = useState<Record<string, boolean>>({});
+  const [prestige, setPrestige] = useState<number>(0);
+  const [totalEarned, setTotalEarned] = useState<number>(0);
+  const [lastDaily, setLastDaily] = useState<number>(0);
+  const [dailyStreak, setDailyStreak] = useState<number>(0);
   const [offlineEarn, setOfflineEarn] = useState<number | null>(null);
   const [shake, setShake] = useState(false);
   const [pulseTick, setPulseTick] = useState(0);
@@ -185,6 +183,7 @@ export function Coinminers() {
 
   // Idle income
   useEffect(() => {
+    if (!hydrated) return;
     const t = setInterval(() => {
       const inc = stats.btcPerSec / 5;
       addBtc(inc);
@@ -199,23 +198,44 @@ export function Coinminers() {
       }
     }, 200);
     return () => clearInterval(t);
-  }, [stats.btcPerSec]);
+  }, [stats.btcPerSec, hydrated]);
 
-  // Offline earnings on mount
+  // Hydrate from localStorage AFTER mount (prevents SSR/client mismatch)
   useEffect(() => {
-    if (!initial?.lastPlayed) return;
-    const dt = Math.min((Date.now() - initial.lastPlayed) / 1000, 8 * 3600); // cap 8h
-    if (dt < 30) return;
-    const earned = stats.btcPerSec * dt * 0.5; // 50% efficiency offline
-    if (earned > 0.0001) {
-      addBtc(earned);
-      setOfflineEarn(earned);
+    const saved = loadSave();
+    if (saved) {
+      if (saved.btc != null) setBtc(saved.btc);
+      if (saved.owned) setOwned(saved.owned);
+      if (saved.upgrades) setUpgrades(saved.upgrades);
+      if (saved.facility) setFacility(saved.facility);
+      if (saved.shelves != null) setShelves(saved.shelves);
+      if (saved.research) setResearch(saved.research);
+      if (saved.claimed) setClaimed(saved.claimed);
+      if (saved.prestige != null) setPrestige(saved.prestige);
+      if (saved.totalEarned != null) setTotalEarned(saved.totalEarned);
+      if (saved.lastDaily != null) setLastDaily(saved.lastDaily);
+      if (saved.dailyStreak != null) setDailyStreak(saved.dailyStreak);
+      if (saved.lastPlayed) {
+        const dt = Math.min((Date.now() - saved.lastPlayed) / 1000, 8 * 3600);
+        if (dt >= 30) {
+          // Approximate offline earnings using saved snapshot's shape (we don't have stats yet)
+          // Use a simple proxy based on owned GPUs.
+          const equippedCount = (saved.owned ?? []).filter(g => g.equipped).length;
+          const earned = equippedCount * 0.0005 * dt * 0.5;
+          if (earned > 0.0001) {
+            setBtc(b => b + earned);
+            setTotalEarned(t => t + earned);
+            setOfflineEarn(earned);
+          }
+        }
+      }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    setHydrated(true);
   }, []);
 
   // Auto-save (debounced via interval)
   useEffect(() => {
+    if (!hydrated) return;
     const save = () => {
       try {
         const data: SaveState = {
@@ -228,7 +248,7 @@ export function Coinminers() {
     const t = setInterval(save, 4000);
     window.addEventListener("beforeunload", save);
     return () => { clearInterval(t); save(); window.removeEventListener("beforeunload", save); };
-  }, [btc, owned, upgrades, facility, shelves, research, claimed, prestige, totalEarned, lastDaily, dailyStreak]);
+  }, [hydrated, btc, owned, upgrades, facility, shelves, research, claimed, prestige, totalEarned, lastDaily, dailyStreak]);
 
   // Market ticker fluctuation
   useEffect(() => {

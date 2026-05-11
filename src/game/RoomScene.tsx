@@ -3,6 +3,7 @@ import type { OwnedGpu } from "./types";
 import { Ambience } from "./Ambience";
 import { Clutter } from "./Clutter";
 import { MiningRack, type RackTier } from "./MiningRack";
+import { FacilityDecor, getFacilityVisuals } from "./FacilityTheme";
 
 /** Garage / facility room with deep environmental detail */
 export function RoomScene({ owned, hashrate, heat, shelves = 2, facility = "garage" }:
@@ -16,6 +17,7 @@ export function RoomScene({ owned, hashrate, heat, shelves = 2, facility = "gara
     facility === "garage" || facility === "basement" ? "starter"
     : facility === "warehouse" || facility === "vault" ? "mid"
     : "endgame";
+  const v = getFacilityVisuals(facility);
   const dust = useMemo(() => Array.from({ length: 18 }, (_, i) => ({
     x: Math.random() * 100, y: Math.random() * 100, d: Math.random() * 6, s: 4 + Math.random() * 6, key: i,
   })), []);
@@ -25,12 +27,10 @@ export function RoomScene({ owned, hashrate, heat, shelves = 2, facility = "gara
 
   return (
     <div className="relative w-full h-full overflow-hidden rounded-md neon-frame"
-      style={{
-        background:
-          "linear-gradient(180deg, #16161e 0%, #0e0f15 50%, #0a0a10 100%)",
-      }}>
+      style={{ background: v.background }}>
       {/* Wall: concrete blocks + grid */}
-      <div className="absolute inset-0 bg-grid opacity-60" />
+      <div className="absolute inset-0 bg-grid opacity-40"
+        style={{ filter: `hue-rotate(${facility === "vault" ? 320 : facility === "quantum" ? 280 : facility === "warehouse" ? 180 : 0}deg)` }} />
       <div className="absolute inset-0 pixel-wall opacity-80 pointer-events-none" />
 
       {/* BACKGROUND LAYER: server-wall silhouette behind shelves */}
@@ -187,9 +187,9 @@ export function RoomScene({ owned, hashrate, heat, shelves = 2, facility = "gara
       {/* Floor: cracked concrete + cables */}
       <div className="absolute bottom-0 left-0 right-0 h-16"
         style={{
-          background:
-            "linear-gradient(180deg, #15151a 0%, #0a0a10 100%)",
-          borderTop: "1px solid var(--metal-light)",
+          background: v.floor,
+          borderTop: `1px solid ${v.accent}`,
+          boxShadow: `0 -4px 16px color-mix(in oklab, ${v.accent} 30%, transparent)`,
         }}>
         <svg className="absolute inset-0 w-full h-full opacity-50">
           <path d="M0 30 Q200 26 400 32 T800 30" stroke="#3a2a1a" strokeWidth="1" fill="none" />
@@ -206,7 +206,20 @@ export function RoomScene({ owned, hashrate, heat, shelves = 2, facility = "gara
         <div className="absolute bottom-1 left-12 w-2.5 h-4 rounded-sm" style={{ background: "linear-gradient(180deg, #2266cc, #113366)" }} />
         <div className="absolute bottom-1 left-24 w-6 h-2 metal-panel" />
         <div className="absolute bottom-1 right-10 w-8 h-3 metal-panel" />
+        {/* Facility label tag */}
+        <div className="absolute -top-5 left-2 px-2 py-0.5 font-pixel text-[8px] pointer-events-none"
+          style={{
+            background: "rgba(0,0,0,0.6)",
+            color: v.accent,
+            border: `1px solid ${v.accent}`,
+            textShadow: `0 0 4px ${v.accent}`,
+          }}>
+          {v.label}
+        </div>
       </div>
+
+      {/* Per-facility decor (workbench, vault door, robot arm, stars, etc.) */}
+      <FacilityDecor facility={facility} />
 
       {/* Heat warning if too hot */}
       {heat > 70 && (
