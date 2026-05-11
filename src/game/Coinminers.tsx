@@ -761,6 +761,95 @@ function ComingSoonPanel({ name }: { name: string }) {
   );
 }
 
+function PrestigePanel({ prestige, totalEarned, onPrestige, onReset }:
+  { prestige: number; totalEarned: number; onPrestige: () => void; onReset: () => void }) {
+  const gain = Math.floor(Math.sqrt(totalEarned / 10));
+  const can = gain >= 1;
+  return (
+    <div className="p-3 space-y-3">
+      <h2 className="font-pixel text-[11px] text-neon-purple">♛ PRESTIGE CORE</h2>
+      <div className="metal-panel p-3 neon-frame">
+        <div className="flex items-center justify-between">
+          <span className="font-pixel text-[10px] text-neon-cyan">CURRENT</span>
+          <span className="font-pixel text-[14px] text-neon-purple pulse-glow">Lv.{prestige}</span>
+        </div>
+        <div className="font-mono-pixel text-[12px] text-muted-foreground mt-1">
+          +{prestige * 25}% permanent income · +{prestige * 50}% daily reward
+        </div>
+      </div>
+      <div className="metal-panel p-3">
+        <div className="font-pixel text-[10px] text-neon-orange mb-1">RESET FOR PRESTIGE</div>
+        <div className="font-mono-pixel text-[12px] text-muted-foreground mb-2">
+          Wipe BTC, GPUs, shelves, upgrades & research in exchange for permanent multipliers.
+        </div>
+        <div className="grid grid-cols-2 gap-2 text-[12px] font-mono-pixel mb-3">
+          <div className="px-2 py-1" style={{ background: "rgba(0,0,0,0.5)", border: "1px solid var(--metal-dark)" }}>
+            <div className="text-[9px] font-pixel text-muted-foreground">LIFETIME ₿</div>
+            <div className="btc-text">{fmtBtc(totalEarned)}</div>
+          </div>
+          <div className="px-2 py-1" style={{ background: "rgba(0,0,0,0.5)", border: "1px solid var(--metal-dark)" }}>
+            <div className="text-[9px] font-pixel text-muted-foreground">GAIN</div>
+            <div className="text-neon-purple">+{gain} prestige</div>
+          </div>
+        </div>
+        <button onClick={onPrestige} disabled={!can}
+          className="btn-buy w-full px-3 py-2 font-pixel text-[10px]">
+          {can ? "PRESTIGE ♛" : `EARN ₿${(10 * Math.pow(prestige + 1, 2)).toFixed(0)}+ TO PRESTIGE`}
+        </button>
+      </div>
+      <div className="metal-panel p-3">
+        <div className="font-pixel text-[10px] text-neon-red mb-1">DANGER ZONE</div>
+        <div className="font-mono-pixel text-[12px] text-muted-foreground mb-2">Wipe save file completely.</div>
+        <button onClick={onReset}
+          className="btn-cyber w-full px-3 py-2 font-pixel text-[9px] text-neon-red border-[color:var(--neon-red)]">
+          WIPE SAVE
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function DailyPanel({ lastDaily, streak, prestige, onClaim }:
+  { lastDaily: number; streak: number; prestige: number; onClaim: () => void }) {
+  const DAY = 24 * 60 * 60 * 1000;
+  const now = Date.now();
+  const ready = now - lastDaily >= DAY;
+  const next = Math.max(0, DAY - (now - lastDaily));
+  const hh = Math.floor(next / 3600000);
+  const mm = Math.floor((next % 3600000) / 60000);
+  const ss = Math.floor((next % 60000) / 1000);
+  const reward = (s: number) => 0.02 * Math.pow(1.8, s - 1) * (1 + prestige * 0.5);
+  return (
+    <div className="p-3 space-y-3">
+      <h2 className="font-pixel text-[11px] text-neon-cyan">◉ DAILY REWARD</h2>
+      <div className="metal-panel p-3 text-center neon-frame">
+        <div className="font-pixel text-[10px] text-neon-orange mb-1">STREAK</div>
+        <div className="font-pixel text-[20px] btc-text pulse-glow">{streak} / 7</div>
+        <div className="font-mono-pixel text-[12px] text-muted-foreground mt-2">
+          {ready ? "Reward ready to claim!" : `Next in ${String(hh).padStart(2,"0")}:${String(mm).padStart(2,"0")}:${String(ss).padStart(2,"0")}`}
+        </div>
+      </div>
+      <div className="grid grid-cols-7 gap-1">
+        {Array.from({ length: 7 }).map((_, i) => {
+          const day = i + 1;
+          const claimed = day <= streak;
+          return (
+            <div key={i} className={`metal-panel p-1 text-center ${claimed ? "rarity-Legendary" : ""}`}>
+              <div className="font-pixel text-[8px] text-muted-foreground">D{day}</div>
+              <div className="font-mono-pixel text-[10px] btc-text">₿{reward(day).toFixed(3)}</div>
+              {claimed && <div className="font-pixel text-[8px] text-neon-green">✓</div>}
+            </div>
+          );
+        })}
+      </div>
+      <button onClick={onClaim} disabled={!ready}
+        className="btn-buy w-full px-3 py-2 font-pixel text-[10px]">
+        {ready ? `CLAIM +₿${reward(Math.min(7, streak + 1)).toFixed(4)}` : "ALREADY CLAIMED"}
+      </button>
+    </div>
+  );
+}
+
 const RESEARCH = [
   { id: "asic",   name: "ASIC R&D",         desc: "+30% hash for ASIC tier",  base: 0.5,  max: 10, icon: "🧪" },
   { id: "quant",  name: "Quantum Theory",   desc: "Unlock quantum bonuses",   base: 2,    max: 8,  icon: "⚛" },
