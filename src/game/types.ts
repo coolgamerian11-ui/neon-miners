@@ -31,4 +31,8 @@ export interface Facility {
   unlockBtc: number;
   bgClass: string;
   capacity: number;
+  /** passive income multiplier for being in this facility */
+  mult?: number;
+  /** short blurb describing the facility's special function */
+  perk?: string;
 }
