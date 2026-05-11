@@ -50,7 +50,11 @@ function loadSave(): Partial<SaveState> | null {
 }
 
 export function Coinminers() {
-  const initial = typeof window !== "undefined" ? loadSave() : null;
+  const initialRef = useRef<Partial<SaveState> | null>(null);
+  if (initialRef.current === null && typeof window !== "undefined") {
+    initialRef.current = loadSave();
+  }
+  const initial = initialRef.current;
   const [btc, setBtc] = useState<number>(initial?.btc ?? 0.05);
   const [owned, setOwned] = useState<OwnedGpu[]>(initial?.owned ?? [
     { id: "g1", modelId: "gtx750", equipped: true },
