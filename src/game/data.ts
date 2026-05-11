@@ -36,16 +36,20 @@ export const UPGRADES: Upgrade[] = [
   { id: "net",    name: "Fiber Uplink",      desc: "+5% pool reward per level",             basePrice: 0.12, bonus: 0.05, max: 20, icon: "📡" },
   { id: "ai",     name: "AI Worker Bot",     desc: "+25% auto-mining per level",            basePrice: 0.5,  bonus: 0.25, max: 15, icon: "🤖" },
   { id: "over",   name: "Overclock Module",  desc: "+20% hashrate, +5% heat per level",     basePrice: 1.2,  bonus: 0.20, max: 20, icon: "🔥" },
+  { id: "imm",    name: "Immersion Tank",    desc: "+30% hashrate, halves heat",            basePrice: 4,    bonus: 0.30, max: 10, icon: "💧" },
+  { id: "solar",  name: "Solar Grid",        desc: "-12% power draw per level",             basePrice: 6,    bonus: 0.12, max: 12, icon: "☀" },
+  { id: "swarm",  name: "Drone Swarm",       desc: "+15% global income per level",          basePrice: 12,   bonus: 0.15, max: 20, icon: "🛸" },
+  { id: "quant",  name: "Quantum Accel",     desc: "+50% hashrate per level",               basePrice: 80,   bonus: 0.50, max: 12, icon: "⚛" },
 ];
 
 export const FACILITIES: Facility[] = [
-  { id: "garage",     name: "Garage",            desc: "Cramped & dusty. Where every empire begins.", unlockBtc: 0,     capacity: 8,   bgClass: "facility-garage" },
-  { id: "basement",   name: "Basement Farm",     desc: "Concrete bunker, louder fans.",               unlockBtc: 5,     capacity: 24,  bgClass: "facility-basement" },
-  { id: "warehouse",  name: "Warehouse",         desc: "Industrial rows, forklifts, cold air.",       unlockBtc: 50,    capacity: 80,  bgClass: "facility-warehouse" },
-  { id: "vault",      name: "Underground Vault", desc: "High-security, red lights, reinforced.",      unlockBtc: 500,   capacity: 240, bgClass: "facility-vault" },
-  { id: "datacenter", name: "Mega Data Center",  desc: "Endless aisles, robotic arms.",               unlockBtc: 5000,  capacity: 800, bgClass: "facility-datacenter" },
-  { id: "quantum",    name: "Quantum Lab",       desc: "Holographic miners, AI cores.",               unlockBtc: 50000, capacity: 2400,bgClass: "facility-quantum" },
-  { id: "space",      name: "Space Station Hub", desc: "Zero-g servers orbiting Earth.",              unlockBtc: 500000,capacity: 9999,bgClass: "facility-space" },
+  { id: "garage",     name: "Garage",            desc: "Cramped & dusty. Where every empire begins.", unlockBtc: 0,      capacity: 16,  mult: 1.0, perk: "+0% bonus — starter rig",                bgClass: "facility-garage" },
+  { id: "basement",   name: "Basement Farm",     desc: "Concrete bunker, louder fans.",               unlockBtc: 2,      capacity: 40,  mult: 1.5, perk: "+50% income · cooler ambient",            bgClass: "facility-basement" },
+  { id: "warehouse",  name: "Warehouse",         desc: "Industrial rows, forklifts, cold air.",       unlockBtc: 25,     capacity: 120, mult: 2.2, perk: "+120% income · bulk shelves",             bgClass: "facility-warehouse" },
+  { id: "vault",      name: "Underground Vault", desc: "High-security, red lights, reinforced.",      unlockBtc: 200,    capacity: 320, mult: 3.5, perk: "+250% income · hardened uptime",          bgClass: "facility-vault" },
+  { id: "datacenter", name: "Mega Data Center",  desc: "Endless aisles, robotic arms.",               unlockBtc: 2000,   capacity: 1000,mult: 6.0, perk: "+500% income · auto maintenance",         bgClass: "facility-datacenter" },
+  { id: "quantum",    name: "Quantum Lab",       desc: "Holographic miners, AI cores.",               unlockBtc: 20000,  capacity: 3000,mult: 12.0,perk: "+1100% income · qubit acceleration",      bgClass: "facility-quantum" },
+  { id: "space",      name: "Space Station Hub", desc: "Zero-g servers orbiting Earth.",              unlockBtc: 200000, capacity: 9999,mult: 25.0,perk: "+2400% income · solar + zero-g cooling",  bgClass: "facility-space" },
 ];
 
 export const SIDEBAR = [
