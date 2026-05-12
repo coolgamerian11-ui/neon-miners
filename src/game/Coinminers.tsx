@@ -735,9 +735,9 @@ function ShopPanel({ btc, onBuy, capacity, owned, stored }: { btc: number; onBuy
 
 function Mini({ label, val, c }: { label: string; val: string; c: string }) {
   return (
-    <div className="px-1.5 py-0.5 rounded-sm" style={{ background: "rgba(0,0,0,0.45)", border: "1px solid var(--metal-dark)" }}>
-      <div className="text-[8px] font-pixel text-muted-foreground leading-none">{label}</div>
-      <div className="font-mono-pixel leading-tight" style={{ color: c, textShadow: `0 0 4px ${c}` }}>{val}</div>
+    <div className="px-1 py-0.5 rounded-sm" style={{ background: "rgba(0,0,0,0.45)", border: "1px solid var(--metal-dark)" }}>
+      <div className="text-[7px] font-pixel text-muted-foreground leading-none">{label}</div>
+      <div className="font-mono-pixel text-[10px] leading-tight" style={{ color: c, textShadow: `0 0 4px ${c}` }}>{val}</div>
     </div>
   );
 }
