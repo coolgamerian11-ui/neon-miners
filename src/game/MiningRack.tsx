@@ -1,3 +1,4 @@
+import { memo } from "react";
 import type { OwnedGpu, GpuModel } from "./types";
 import { GPU_MODELS } from "./data";
 import { PixelGpu } from "./PixelGpu";
@@ -35,7 +36,7 @@ const TIER_STYLE: Record<RackTier, {
   },
 };
 
-export function MiningRack({ index, perShelf = 4, row, tier }: Props) {
+function MiningRackInner({ index, perShelf = 4, row, tier }: Props) {
   const s = TIER_STYLE[tier];
   const filledCount = row.filter(Boolean).length;
   const active = filledCount > 0;
