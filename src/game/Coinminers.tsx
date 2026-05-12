@@ -1115,6 +1115,8 @@ function MissionsPanel({ btc: _btc, owned, hashrate, upgradesCount, claimed, onC
     { id: "m4", name: "Tinkerer",       desc: "Buy 5 upgrades",         target: 5,   progress: upgradesCount, reward: 0.2,  icon: "⚙" },
     { id: "m5", name: "Scale Up",       desc: "Reach 100 TH/s",         target: 100, progress: hashrate,      reward: 4,    icon: "▲" },
     { id: "m6", name: "Mining Tycoon",  desc: "Own 20 GPUs",            target: 20,  progress: owned,         reward: 6,    icon: "♛" },
+    { id: "m7", name: "Petahash Push",  desc: "Reach 1,000 TH/s",       target: 1000,progress: hashrate,      reward: 30,   icon: "⚡" },
+    { id: "m9", name: "Empire State",   desc: "Own 50 GPUs",            target: 50,  progress: owned,         reward: 18,   icon: "▦" },
   ];
   return (
     <div className="p-3 space-y-2">
