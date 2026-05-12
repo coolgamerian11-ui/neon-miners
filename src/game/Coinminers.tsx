@@ -450,10 +450,8 @@ export function Coinminers() {
     { id: "m5",  target: 100,  progress: stats.finalHash },
     { id: "m6",  target: 20,   progress: owned.length },
     { id: "m7",  target: 1000, progress: stats.finalHash },
-    { id: "m8",  target: 5,    progress: shelves },
     { id: "m9",  target: 50,   progress: owned.length },
-    { id: "m10", target: 1,    progress: prestige },
-  ], [owned.length, stats.finalHash, upgrades, shelves, prestige]);
+  ], [owned.length, stats.finalHash, upgrades]);
   const missionAlert = missionsList.some(m => m.progress >= m.target && !claimed[m.id]);
   const dailyAlert = Date.now() - lastDaily >= DAY_MS;
   const achievementsAlert = ACHIEVEMENTS.some(a => !achievementsClaimed[a.id] && achievementProgress(a.id) >= a.target);
