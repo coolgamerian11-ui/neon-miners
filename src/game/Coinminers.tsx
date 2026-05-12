@@ -3,6 +3,7 @@ import { GPU_MODELS, UPGRADES, FACILITIES, SIDEBAR, COOLER_MODELS, POWER_MODELS,
 import type { OwnedGpu, OwnedCooler, OwnedPower } from "./types";
 import { PixelGpu } from "./PixelGpu";
 import { RoomScene } from "./RoomScene";
+import { ShelvesPanel, CoolersPanel, GeneratorsPanel, AchievementsPanel, CosmeticsPanel } from "./NewPanels";
 
 const fmtBtc = (n: number) => {
   if (n >= 1000) return n.toFixed(2);
