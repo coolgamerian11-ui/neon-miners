@@ -252,3 +252,5 @@ function RoomSceneInner({ owned, hashrate, heat, shelves = 2, facility = "garage
     </div>
   );
 }
+
+export const RoomScene = memo(RoomSceneInner);
