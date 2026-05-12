@@ -549,14 +549,27 @@ export function Coinminers() {
         {/* Sidebar */}
         <aside className="w-full lg:w-[180px] flex lg:flex-col gap-1 p-2 border-b lg:border-b-0 lg:border-r border-[color:var(--metal-light)] overflow-x-auto cyber-scroll shrink-0"
           style={{ background: "linear-gradient(180deg, #14141d, #0a0a12)" }}>
-          {SIDEBAR.map(s => (
-            <button key={s.id}
-              onClick={() => setTab(s.id)}
-              className={`btn-cyber ${tab === s.id ? "active" : ""} text-left px-3 py-2 font-pixel text-[10px] flex items-center gap-2 rounded-sm shrink-0 whitespace-nowrap`}>
-              <span className="text-base leading-none w-5">{s.icon}</span>
-              <span>{s.label}</span>
-            </button>
-          ))}
+          {SIDEBAR.map(s => {
+            const hasAlert = alerts[s.id];
+            return (
+              <button key={s.id}
+                onClick={() => setTab(s.id)}
+                className={`btn-cyber ${tab === s.id ? "active" : ""} relative text-left px-3 py-2 font-pixel text-[10px] flex items-center gap-2 rounded-sm shrink-0 whitespace-nowrap`}>
+                <span className="text-base leading-none w-5">{s.icon}</span>
+                <span>{s.label}</span>
+                {hasAlert && (
+                  <span className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full"
+                    style={{ background: "var(--neon-red)", boxShadow: "0 0 6px var(--neon-red)", animation: "blink-led 1s ease-in-out infinite" }} />
+                )}
+              </button>
+            );
+          })}
+          {tokens > 0 && (
+            <div className="hidden lg:block metal-panel px-2 py-1 text-[10px]">
+              <div className="font-pixel text-neon-purple">◆ TOKENS</div>
+              <div className="font-mono-pixel text-base text-neon-orange">{tokens}</div>
+            </div>
+          )}
           <div className="hidden lg:block mt-auto metal-panel p-2 text-[10px]">
             <div className="font-pixel text-neon-cyan mb-1">FACILITY</div>
             <div className="font-mono-pixel text-base text-neon-orange">{currentFacility.name}</div>
@@ -581,6 +594,19 @@ export function Coinminers() {
               onBuyShelf={buyShelf} onEquip={equipGpu} onUnequip={unequipGpu} onSell={sellGpu} />
           ) : tab === "shop" || tab === "home" ? (
             <ShopPanel btc={btc} onBuy={buyGpu} capacity={shelfCapacity} owned={owned.filter(g=>g.equipped).length} stored={owned.filter(g=>!g.equipped).length} />
+          ) : tab === "shelves" ? (
+            <ShelvesPanel btc={btc} shelves={shelves} maxShelves={maxShelves} shelfCost={shelfCost}
+              capacity={currentFacility.capacity} onBuyShelf={buyShelf} />
+          ) : tab === "coolers" ? (
+            <CoolersPanel btc={btc} coolers={coolers} shelves={shelves}
+              onBuy={buyCooler} onAssign={assignCooler} onUnassign={unassignCooler} onSell={sellCooler} />
+          ) : tab === "generators" ? (
+            <GeneratorsPanel btc={btc} powers={powers} shelves={shelves}
+              onBuy={buyPower} onAssign={assignPower} onUnassign={unassignPower} onSell={sellPower} />
+          ) : tab === "achiev" ? (
+            <AchievementsPanel claimed={achievementsClaimed} progress={achievementProgress} onClaim={claimAchievement} />
+          ) : tab === "cosmetics" ? (
+            <CosmeticsPanel tokens={tokens} unlocked={cosmeticsUnlocked} />
           ) : tab === "research" ? (
             <ResearchPanel btc={btc} levels={research} onBuy={buyResearch} />
           ) : tab === "missions" ? (
