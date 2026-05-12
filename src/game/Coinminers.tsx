@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { GPU_MODELS, UPGRADES, FACILITIES, SIDEBAR } from "./data";
-import type { OwnedGpu } from "./types";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
+import { GPU_MODELS, UPGRADES, FACILITIES, SIDEBAR, COOLER_MODELS, POWER_MODELS, ACHIEVEMENTS } from "./data";
+import type { OwnedGpu, OwnedCooler, OwnedPower } from "./types";
 import { PixelGpu } from "./PixelGpu";
 import { RoomScene } from "./RoomScene";
 
@@ -23,7 +23,7 @@ const RARITY_COLOR: Record<string, string> = {
   Mythic: "var(--neon-cyan)",
 };
 
-const SAVE_KEY = "coinminers.save.v2";
+const SAVE_KEY = "coinminers.save.v3";
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 interface SaveState {
@@ -39,6 +39,11 @@ interface SaveState {
   lastDaily: number;
   dailyStreak: number;
   lastPlayed: number;
+  coolers: OwnedCooler[];
+  powers: OwnedPower[];
+  achievementsClaimed: Record<string, boolean>;
+  cosmeticsUnlocked: Record<string, boolean>;
+  tokens: number;
 }
 
 function loadSave(): Partial<SaveState> | null {
@@ -71,6 +76,11 @@ export function Coinminers() {
   const [lastDaily, setLastDaily] = useState<number>(0);
   const [dailyStreak, setDailyStreak] = useState<number>(0);
   const [offlineEarn, setOfflineEarn] = useState<number | null>(null);
+  const [coolers, setCoolers] = useState<OwnedCooler[]>([]);
+  const [powers, setPowers] = useState<OwnedPower[]>([]);
+  const [achievementsClaimed, setAchievementsClaimed] = useState<Record<string, boolean>>({});
+  const [cosmeticsUnlocked, setCosmeticsUnlocked] = useState<Record<string, boolean>>({});
+  const [tokens, setTokens] = useState<number>(0);
   const [shake, setShake] = useState(false);
   const [pulseTick, setPulseTick] = useState(0);
   const [tickFloats, setTickFloats] = useState<Array<{ id: number; v: number }>>([]);
@@ -134,6 +144,10 @@ export function Coinminers() {
     setResearch({});
     setFacility("garage");
     setTotalEarned(0);
+    // reset missions & shelf-equipped gear (achievements + cosmetics + tokens persist)
+    setClaimed({});
+    setCoolers([]);
+    setPowers([]);
     triggerShake();
   }
 
@@ -150,13 +164,18 @@ export function Coinminers() {
 
   // Derived stats
   const stats = useMemo(() => {
-    let hash = 0, power = 0, heat = 0;
+    // per-shelf hash/power/heat then apply per-shelf cooler / power
+    let hash = 0, powerDemand = 0, heat = 0;
     const equipped = owned.filter(g => g.equipped);
-    for (const g of equipped) {
-      const m = GPU_MODELS.find(x => x.id === g.modelId)!;
-      hash += m.hashrate;
-      power += m.power;
-      heat += m.heat;
+    // group by shelf index using order in equipped list
+    const perShelf: { hash: number; power: number; heat: number }[] = [];
+    for (let i = 0; i < equipped.length; i++) {
+      const m = GPU_MODELS.find(x => x.id === equipped[i].modelId)!;
+      const s = Math.floor(i / 4);
+      if (!perShelf[s]) perShelf[s] = { hash: 0, power: 0, heat: 0 };
+      perShelf[s].hash += m.hashrate;
+      perShelf[s].power += m.power;
+      perShelf[s].heat += m.heat;
     }
     const fwLvl = upgrades["fw"] ?? 0;
     const overLvl = upgrades["over"] ?? 0;
@@ -168,18 +187,49 @@ export function Coinminers() {
     const solarLvl = upgrades["solar"] ?? 0;
     const swarmLvl = upgrades["swarm"] ?? 0;
     const quantLvl = upgrades["quant"] ?? 0;
+    const compressLvl = upgrades["compress"] ?? 0;
+    const neuroLvl = upgrades["neuro"] ?? 0;
+    const fusionLvl = upgrades["fusion"] ?? 0;
 
     const hashMult = 1 + fwLvl * 0.10 + coolLvl * 0.15 + overLvl * 0.20 + aiLvl * 0.25
-                       + immLvl * 0.30 + quantLvl * 0.50;
-    const rewardMult = (1 + netLvl * 0.05) * (1 + swarmLvl * 0.15) * facilityMult * prestigeMult;
-    const finalHash = hash * hashMult;
-    const finalPower = power * Math.max(0.15, 1 - psuLvl * 0.08 - solarLvl * 0.12);
-    const finalHeat = Math.max(15, heat * (1 - coolLvl * 0.04 - immLvl * 0.05) + overLvl * 5 + 20);
-    // BTC per second — easier early-game progression
-    const btcPerSec = (finalHash * 0.00003 + 0.000005) * rewardMult;
-    const efficiency = finalPower > 0 ? Math.min(100, (finalHash / finalPower) * 6) : 0;
-    return { finalHash, finalPower, finalHeat, btcPerSec, efficiency };
-  }, [owned, upgrades, facilityMult, prestigeMult]);
+                       + immLvl * 0.30 + quantLvl * 0.50 + neuroLvl * 0.20;
+    const rewardMult = (1 + netLvl * 0.05) * (1 + swarmLvl * 0.15) * (1 + compressLvl * 0.08)
+                       * facilityMult * prestigeMult;
+    const powerReductionMult = Math.max(0.10, 1 - psuLvl * 0.08 - solarLvl * 0.12 - fusionLvl * 0.20);
+
+    let totalHash = 0;
+    for (let s = 0; s < perShelf.length; s++) {
+      const sh = perShelf[s];
+      // cooler on this shelf
+      const cooler = coolers.find(c => c.shelf === s);
+      const cm = cooler ? COOLER_MODELS.find(x => x.id === cooler.modelId) : null;
+      const cooling = cm?.cooling ?? 0;
+      const effHeat = Math.max(15, sh.heat - cooling + overLvl * 2 + 10);
+      // heat penalty: above 60°C, hashrate drops
+      const heatPenalty = effHeat <= 60 ? 1 : Math.max(0.20, 1 - (effHeat - 60) / 100);
+      // power on this shelf
+      const psu = powers.find(p => p.shelf === s);
+      const pm = psu ? POWER_MODELS.find(x => x.id === psu.modelId) : null;
+      const supplied = pm?.capacity ?? 0;
+      const demand = sh.power * powerReductionMult;
+      const powerPenalty = supplied <= 0 ? 0.4 : Math.min(1, supplied / Math.max(0.001, demand));
+      // shelf hashrate
+      totalHash += sh.hash * hashMult * heatPenalty * powerPenalty;
+      hash += sh.hash;
+      powerDemand += demand;
+      heat += effHeat;
+    }
+    if (perShelf.length === 0) totalHash = 0;
+    const avgHeat = perShelf.length ? heat / perShelf.length : 20;
+    const btcPerSec = (totalHash * 0.00003 + 0.000005) * rewardMult;
+    const efficiency = powerDemand > 0 ? Math.min(100, (totalHash / powerDemand) * 6) : 0;
+    const totalSupplied = powers.reduce((acc, p) => {
+      if (p.shelf == null) return acc;
+      const pm = POWER_MODELS.find(x => x.id === p.modelId);
+      return acc + (pm?.capacity ?? 0);
+    }, 0);
+    return { finalHash: totalHash, finalPower: powerDemand, finalHeat: avgHeat, btcPerSec, efficiency, totalSupplied };
+  }, [owned, upgrades, facilityMult, prestigeMult, coolers, powers]);
 
   // Idle income
   useEffect(() => {
@@ -215,6 +265,11 @@ export function Coinminers() {
       if (saved.totalEarned != null) setTotalEarned(saved.totalEarned);
       if (saved.lastDaily != null) setLastDaily(saved.lastDaily);
       if (saved.dailyStreak != null) setDailyStreak(saved.dailyStreak);
+      if (saved.coolers) setCoolers(saved.coolers);
+      if (saved.powers) setPowers(saved.powers);
+      if (saved.achievementsClaimed) setAchievementsClaimed(saved.achievementsClaimed);
+      if (saved.cosmeticsUnlocked) setCosmeticsUnlocked(saved.cosmeticsUnlocked);
+      if (saved.tokens != null) setTokens(saved.tokens);
       if (saved.lastPlayed) {
         const dt = Math.min((Date.now() - saved.lastPlayed) / 1000, 8 * 3600);
         if (dt >= 30) {
@@ -241,6 +296,7 @@ export function Coinminers() {
         const data: SaveState = {
           btc, owned, upgrades, facility, shelves, research, claimed,
           prestige, totalEarned, lastDaily, dailyStreak, lastPlayed: Date.now(),
+          coolers, powers, achievementsClaimed, cosmeticsUnlocked, tokens,
         };
         localStorage.setItem(SAVE_KEY, JSON.stringify(data));
       } catch {}
@@ -248,7 +304,7 @@ export function Coinminers() {
     const t = setInterval(save, 4000);
     window.addEventListener("beforeunload", save);
     return () => { clearInterval(t); save(); window.removeEventListener("beforeunload", save); };
-  }, [hydrated, btc, owned, upgrades, facility, shelves, research, claimed, prestige, totalEarned, lastDaily, dailyStreak]);
+  }, [hydrated, btc, owned, upgrades, facility, shelves, research, claimed, prestige, totalEarned, lastDaily, dailyStreak, coolers, powers, achievementsClaimed, cosmeticsUnlocked, tokens]);
 
   // Market ticker fluctuation
   useEffect(() => {
