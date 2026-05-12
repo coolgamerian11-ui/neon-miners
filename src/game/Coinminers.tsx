@@ -710,7 +710,7 @@ function ShopPanel({ btc, onBuy, capacity, owned, stored }: { btc: number; onBuy
               </div>
               <div className="flex-1 min-w-0">
                 <div className="font-pixel text-[10px] text-neon-cyan truncate">{m.name}</div>
-                <div className="grid grid-cols-3 gap-1 mt-1.5 text-[12px] font-mono-pixel">
+                <div className="grid grid-cols-3 gap-0.5 mt-1.5 text-[10px] font-mono-pixel">
                   <Mini label="HASH" val={`${m.hashrate} TH`} c="var(--neon-cyan)" />
                   <Mini label="PWR"  val={`${m.power} kW`}  c="var(--neon-orange)" />
                   <Mini label="HEAT" val={`${m.heat}°`}    c="var(--neon-red)" />
