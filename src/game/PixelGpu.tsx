@@ -177,3 +177,5 @@ function PixelGpuInner({ model, idx, large = false, heatPct = 0.4 }:
     </div>
   );
 }
+
+export const PixelGpu = memo(PixelGpuInner);
