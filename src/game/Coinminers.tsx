@@ -368,6 +368,100 @@ export function Coinminers() {
     triggerShake();
   }
 
+  function buyCooler(modelId: string) {
+    const m = COOLER_MODELS.find(x => x.id === modelId)!;
+    if (btc < m.basePrice) return;
+    setBtc(b => b - m.basePrice);
+    setCoolers(c => [...c, { id: `c${Date.now()}-${Math.random()}`, modelId, shelf: null }]);
+  }
+  function assignCooler(coolerId: string, shelf: number) {
+    setCoolers(cs => {
+      // unassign anything else on this shelf
+      const cleared = cs.map(c => c.shelf === shelf ? { ...c, shelf: null } : c);
+      return cleared.map(c => c.id === coolerId ? { ...c, shelf } : c);
+    });
+  }
+  function unassignCooler(coolerId: string) {
+    setCoolers(cs => cs.map(c => c.id === coolerId ? { ...c, shelf: null } : c));
+  }
+  function sellCooler(coolerId: string) {
+    const c = coolers.find(x => x.id === coolerId);
+    if (!c) return;
+    const m = COOLER_MODELS.find(x => x.id === c.modelId);
+    if (m) setBtc(b => b + m.basePrice * 0.6);
+    setCoolers(cs => cs.filter(x => x.id !== coolerId));
+  }
+
+  function buyPower(modelId: string) {
+    const m = POWER_MODELS.find(x => x.id === modelId)!;
+    if (btc < m.basePrice) return;
+    setBtc(b => b - m.basePrice);
+    setPowers(p => [...p, { id: `p${Date.now()}-${Math.random()}`, modelId, shelf: null }]);
+  }
+  function assignPower(pid: string, shelf: number) {
+    setPowers(ps => {
+      const cleared = ps.map(p => p.shelf === shelf ? { ...p, shelf: null } : p);
+      return cleared.map(p => p.id === pid ? { ...p, shelf } : p);
+    });
+  }
+  function unassignPower(pid: string) {
+    setPowers(ps => ps.map(p => p.id === pid ? { ...p, shelf: null } : p));
+  }
+  function sellPower(pid: string) {
+    const p = powers.find(x => x.id === pid);
+    if (!p) return;
+    const m = POWER_MODELS.find(x => x.id === p.modelId);
+    if (m) setBtc(b => b + m.basePrice * 0.6);
+    setPowers(ps => ps.filter(x => x.id !== pid));
+  }
+
+  // Achievement progress + claim
+  function achievementProgress(id: string): number {
+    const a = ACHIEVEMENTS.find(x => x.id === id);
+    if (!a) return 0;
+    switch (a.metric) {
+      case "owned": return owned.length;
+      case "hashrate": return stats.finalHash;
+      case "upgrades": return Object.values(upgrades).reduce((s, n) => s + n, 0);
+      case "shelves": return shelves;
+      case "prestige": return prestige;
+      case "totalEarned": return totalEarned;
+      default: return 0;
+    }
+  }
+  function claimAchievement(id: string) {
+    if (achievementsClaimed[id]) return;
+    const a = ACHIEVEMENTS.find(x => x.id === id);
+    if (!a) return;
+    if (achievementProgress(id) < a.target) return;
+    setAchievementsClaimed(c => ({ ...c, [id]: true }));
+    if (a.reward.tokens) setTokens(t => t + a.reward.tokens!);
+    if (a.reward.cosmetic) setCosmeticsUnlocked(c => ({ ...c, [a.reward.cosmetic!]: true }));
+    triggerShake();
+  }
+
+  // ALERT FLAGS
+  const missionsList = useMemo(() => [
+    { id: "m1",  target: 3,    progress: owned.length },
+    { id: "m2",  target: 8,    progress: owned.length },
+    { id: "m3",  target: 10,   progress: stats.finalHash },
+    { id: "m4",  target: 5,    progress: Object.values(upgrades).reduce((a,b)=>a+b,0) },
+    { id: "m5",  target: 100,  progress: stats.finalHash },
+    { id: "m6",  target: 20,   progress: owned.length },
+    { id: "m7",  target: 1000, progress: stats.finalHash },
+    { id: "m8",  target: 5,    progress: shelves },
+    { id: "m9",  target: 50,   progress: owned.length },
+    { id: "m10", target: 1,    progress: prestige },
+  ], [owned.length, stats.finalHash, upgrades, shelves, prestige]);
+  const missionAlert = missionsList.some(m => m.progress >= m.target && !claimed[m.id]);
+  const dailyAlert = Date.now() - lastDaily >= DAY_MS;
+  const achievementsAlert = ACHIEVEMENTS.some(a => !achievementsClaimed[a.id] && achievementProgress(a.id) >= a.target);
+  const alerts: Record<string, boolean> = {
+    missions: missionAlert,
+    daily: dailyAlert,
+    achiev: achievementsAlert,
+  };
+
   return (
     <div className={`relative h-screen w-screen overflow-hidden text-foreground flex flex-col ${shake ? "shake" : ""}`}
       style={{ background: "radial-gradient(ellipse at center top, #1a1828, #0a0a12 70%)" }}>
