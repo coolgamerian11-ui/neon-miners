@@ -336,3 +336,5 @@ function Slot({ idx, model, tier }: { idx: number; model: GpuModel | null; tier:
     </div>
   );
 }
+
+export const MiningRack = memo(MiningRackInner);
