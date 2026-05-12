@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { GPU_MODELS, UPGRADES, FACILITIES, SIDEBAR } from "./data";
-import type { OwnedGpu } from "./types";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
+import { GPU_MODELS, UPGRADES, FACILITIES, SIDEBAR, COOLER_MODELS, POWER_MODELS, ACHIEVEMENTS } from "./data";
+import type { OwnedGpu, OwnedCooler, OwnedPower } from "./types";
 import { PixelGpu } from "./PixelGpu";
 import { RoomScene } from "./RoomScene";
+import { ShelvesPanel, CoolersPanel, GeneratorsPanel, AchievementsPanel, CosmeticsPanel } from "./NewPanels";
 
 const fmtBtc = (n: number) => {
   if (n >= 1000) return n.toFixed(2);
@@ -23,7 +24,7 @@ const RARITY_COLOR: Record<string, string> = {
   Mythic: "var(--neon-cyan)",
 };
 
-const SAVE_KEY = "coinminers.save.v2";
+const SAVE_KEY = "coinminers.save.v3";
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 interface SaveState {
@@ -39,6 +40,11 @@ interface SaveState {
   lastDaily: number;
   dailyStreak: number;
   lastPlayed: number;
+  coolers: OwnedCooler[];
+  powers: OwnedPower[];
+  achievementsClaimed: Record<string, boolean>;
+  cosmeticsUnlocked: Record<string, boolean>;
+  tokens: number;
 }
 
 function loadSave(): Partial<SaveState> | null {
@@ -71,6 +77,11 @@ export function Coinminers() {
   const [lastDaily, setLastDaily] = useState<number>(0);
   const [dailyStreak, setDailyStreak] = useState<number>(0);
   const [offlineEarn, setOfflineEarn] = useState<number | null>(null);
+  const [coolers, setCoolers] = useState<OwnedCooler[]>([]);
+  const [powers, setPowers] = useState<OwnedPower[]>([]);
+  const [achievementsClaimed, setAchievementsClaimed] = useState<Record<string, boolean>>({});
+  const [cosmeticsUnlocked, setCosmeticsUnlocked] = useState<Record<string, boolean>>({});
+  const [tokens, setTokens] = useState<number>(0);
   const [shake, setShake] = useState(false);
   const [pulseTick, setPulseTick] = useState(0);
   const [tickFloats, setTickFloats] = useState<Array<{ id: number; v: number }>>([]);
@@ -134,6 +145,10 @@ export function Coinminers() {
     setResearch({});
     setFacility("garage");
     setTotalEarned(0);
+    // reset missions & shelf-equipped gear (achievements + cosmetics + tokens persist)
+    setClaimed({});
+    setCoolers([]);
+    setPowers([]);
     triggerShake();
   }
 
@@ -150,13 +165,18 @@ export function Coinminers() {
 
   // Derived stats
   const stats = useMemo(() => {
-    let hash = 0, power = 0, heat = 0;
+    // per-shelf hash/power/heat then apply per-shelf cooler / power
+    let hash = 0, powerDemand = 0, heat = 0;
     const equipped = owned.filter(g => g.equipped);
-    for (const g of equipped) {
-      const m = GPU_MODELS.find(x => x.id === g.modelId)!;
-      hash += m.hashrate;
-      power += m.power;
-      heat += m.heat;
+    // group by shelf index using order in equipped list
+    const perShelf: { hash: number; power: number; heat: number }[] = [];
+    for (let i = 0; i < equipped.length; i++) {
+      const m = GPU_MODELS.find(x => x.id === equipped[i].modelId)!;
+      const s = Math.floor(i / 4);
+      if (!perShelf[s]) perShelf[s] = { hash: 0, power: 0, heat: 0 };
+      perShelf[s].hash += m.hashrate;
+      perShelf[s].power += m.power;
+      perShelf[s].heat += m.heat;
     }
     const fwLvl = upgrades["fw"] ?? 0;
     const overLvl = upgrades["over"] ?? 0;
@@ -168,18 +188,49 @@ export function Coinminers() {
     const solarLvl = upgrades["solar"] ?? 0;
     const swarmLvl = upgrades["swarm"] ?? 0;
     const quantLvl = upgrades["quant"] ?? 0;
+    const compressLvl = upgrades["compress"] ?? 0;
+    const neuroLvl = upgrades["neuro"] ?? 0;
+    const fusionLvl = upgrades["fusion"] ?? 0;
 
     const hashMult = 1 + fwLvl * 0.10 + coolLvl * 0.15 + overLvl * 0.20 + aiLvl * 0.25
-                       + immLvl * 0.30 + quantLvl * 0.50;
-    const rewardMult = (1 + netLvl * 0.05) * (1 + swarmLvl * 0.15) * facilityMult * prestigeMult;
-    const finalHash = hash * hashMult;
-    const finalPower = power * Math.max(0.15, 1 - psuLvl * 0.08 - solarLvl * 0.12);
-    const finalHeat = Math.max(15, heat * (1 - coolLvl * 0.04 - immLvl * 0.05) + overLvl * 5 + 20);
-    // BTC per second — easier early-game progression
-    const btcPerSec = (finalHash * 0.00003 + 0.000005) * rewardMult;
-    const efficiency = finalPower > 0 ? Math.min(100, (finalHash / finalPower) * 6) : 0;
-    return { finalHash, finalPower, finalHeat, btcPerSec, efficiency };
-  }, [owned, upgrades, facilityMult, prestigeMult]);
+                       + immLvl * 0.30 + quantLvl * 0.50 + neuroLvl * 0.20;
+    const rewardMult = (1 + netLvl * 0.05) * (1 + swarmLvl * 0.15) * (1 + compressLvl * 0.08)
+                       * facilityMult * prestigeMult;
+    const powerReductionMult = Math.max(0.10, 1 - psuLvl * 0.08 - solarLvl * 0.12 - fusionLvl * 0.20);
+
+    let totalHash = 0;
+    for (let s = 0; s < perShelf.length; s++) {
+      const sh = perShelf[s];
+      // cooler on this shelf
+      const cooler = coolers.find(c => c.shelf === s);
+      const cm = cooler ? COOLER_MODELS.find(x => x.id === cooler.modelId) : null;
+      const cooling = cm?.cooling ?? 0;
+      const effHeat = Math.max(15, sh.heat - cooling + overLvl * 2 + 10);
+      // heat penalty: above 60°C, hashrate drops
+      const heatPenalty = effHeat <= 60 ? 1 : Math.max(0.20, 1 - (effHeat - 60) / 100);
+      // power on this shelf
+      const psu = powers.find(p => p.shelf === s);
+      const pm = psu ? POWER_MODELS.find(x => x.id === psu.modelId) : null;
+      const supplied = pm?.capacity ?? 0;
+      const demand = sh.power * powerReductionMult;
+      const powerPenalty = supplied <= 0 ? 0.4 : Math.min(1, supplied / Math.max(0.001, demand));
+      // shelf hashrate
+      totalHash += sh.hash * hashMult * heatPenalty * powerPenalty;
+      hash += sh.hash;
+      powerDemand += demand;
+      heat += effHeat;
+    }
+    if (perShelf.length === 0) totalHash = 0;
+    const avgHeat = perShelf.length ? heat / perShelf.length : 20;
+    const btcPerSec = (totalHash * 0.00003 + 0.000005) * rewardMult;
+    const efficiency = powerDemand > 0 ? Math.min(100, (totalHash / powerDemand) * 6) : 0;
+    const totalSupplied = powers.reduce((acc, p) => {
+      if (p.shelf == null) return acc;
+      const pm = POWER_MODELS.find(x => x.id === p.modelId);
+      return acc + (pm?.capacity ?? 0);
+    }, 0);
+    return { finalHash: totalHash, finalPower: powerDemand, finalHeat: avgHeat, btcPerSec, efficiency, totalSupplied };
+  }, [owned, upgrades, facilityMult, prestigeMult, coolers, powers]);
 
   // Idle income
   useEffect(() => {
@@ -215,6 +266,11 @@ export function Coinminers() {
       if (saved.totalEarned != null) setTotalEarned(saved.totalEarned);
       if (saved.lastDaily != null) setLastDaily(saved.lastDaily);
       if (saved.dailyStreak != null) setDailyStreak(saved.dailyStreak);
+      if (saved.coolers) setCoolers(saved.coolers);
+      if (saved.powers) setPowers(saved.powers);
+      if (saved.achievementsClaimed) setAchievementsClaimed(saved.achievementsClaimed);
+      if (saved.cosmeticsUnlocked) setCosmeticsUnlocked(saved.cosmeticsUnlocked);
+      if (saved.tokens != null) setTokens(saved.tokens);
       if (saved.lastPlayed) {
         const dt = Math.min((Date.now() - saved.lastPlayed) / 1000, 8 * 3600);
         if (dt >= 30) {
@@ -241,6 +297,7 @@ export function Coinminers() {
         const data: SaveState = {
           btc, owned, upgrades, facility, shelves, research, claimed,
           prestige, totalEarned, lastDaily, dailyStreak, lastPlayed: Date.now(),
+          coolers, powers, achievementsClaimed, cosmeticsUnlocked, tokens,
         };
         localStorage.setItem(SAVE_KEY, JSON.stringify(data));
       } catch {}
@@ -248,7 +305,7 @@ export function Coinminers() {
     const t = setInterval(save, 4000);
     window.addEventListener("beforeunload", save);
     return () => { clearInterval(t); save(); window.removeEventListener("beforeunload", save); };
-  }, [hydrated, btc, owned, upgrades, facility, shelves, research, claimed, prestige, totalEarned, lastDaily, dailyStreak]);
+  }, [hydrated, btc, owned, upgrades, facility, shelves, research, claimed, prestige, totalEarned, lastDaily, dailyStreak, coolers, powers, achievementsClaimed, cosmeticsUnlocked, tokens]);
 
   // Market ticker fluctuation
   useEffect(() => {
@@ -311,6 +368,98 @@ export function Coinminers() {
     setUpgrades(u2 => ({ ...u2, [id]: lvl + 1 }));
     triggerShake();
   }
+
+  function buyCooler(modelId: string) {
+    const m = COOLER_MODELS.find(x => x.id === modelId)!;
+    if (btc < m.basePrice) return;
+    setBtc(b => b - m.basePrice);
+    setCoolers(c => [...c, { id: `c${Date.now()}-${Math.random()}`, modelId, shelf: null }]);
+  }
+  function assignCooler(coolerId: string, shelf: number) {
+    setCoolers(cs => {
+      // unassign anything else on this shelf
+      const cleared = cs.map(c => c.shelf === shelf ? { ...c, shelf: null } : c);
+      return cleared.map(c => c.id === coolerId ? { ...c, shelf } : c);
+    });
+  }
+  function unassignCooler(coolerId: string) {
+    setCoolers(cs => cs.map(c => c.id === coolerId ? { ...c, shelf: null } : c));
+  }
+  function sellCooler(coolerId: string) {
+    const c = coolers.find(x => x.id === coolerId);
+    if (!c) return;
+    const m = COOLER_MODELS.find(x => x.id === c.modelId);
+    if (m) setBtc(b => b + m.basePrice * 0.6);
+    setCoolers(cs => cs.filter(x => x.id !== coolerId));
+  }
+
+  function buyPower(modelId: string) {
+    const m = POWER_MODELS.find(x => x.id === modelId)!;
+    if (btc < m.basePrice) return;
+    setBtc(b => b - m.basePrice);
+    setPowers(p => [...p, { id: `p${Date.now()}-${Math.random()}`, modelId, shelf: null }]);
+  }
+  function assignPower(pid: string, shelf: number) {
+    setPowers(ps => {
+      const cleared = ps.map(p => p.shelf === shelf ? { ...p, shelf: null } : p);
+      return cleared.map(p => p.id === pid ? { ...p, shelf } : p);
+    });
+  }
+  function unassignPower(pid: string) {
+    setPowers(ps => ps.map(p => p.id === pid ? { ...p, shelf: null } : p));
+  }
+  function sellPower(pid: string) {
+    const p = powers.find(x => x.id === pid);
+    if (!p) return;
+    const m = POWER_MODELS.find(x => x.id === p.modelId);
+    if (m) setBtc(b => b + m.basePrice * 0.6);
+    setPowers(ps => ps.filter(x => x.id !== pid));
+  }
+
+  // Achievement progress + claim
+  function achievementProgress(id: string): number {
+    const a = ACHIEVEMENTS.find(x => x.id === id);
+    if (!a) return 0;
+    switch (a.metric) {
+      case "owned": return owned.length;
+      case "hashrate": return stats.finalHash;
+      case "upgrades": return Object.values(upgrades).reduce((s, n) => s + n, 0);
+      case "shelves": return shelves;
+      case "prestige": return prestige;
+      case "totalEarned": return totalEarned;
+      default: return 0;
+    }
+  }
+  function claimAchievement(id: string) {
+    if (achievementsClaimed[id]) return;
+    const a = ACHIEVEMENTS.find(x => x.id === id);
+    if (!a) return;
+    if (achievementProgress(id) < a.target) return;
+    setAchievementsClaimed(c => ({ ...c, [id]: true }));
+    if (a.reward.tokens) setTokens(t => t + a.reward.tokens!);
+    if (a.reward.cosmetic) setCosmeticsUnlocked(c => ({ ...c, [a.reward.cosmetic!]: true }));
+    triggerShake();
+  }
+
+  // ALERT FLAGS
+  const missionsList = useMemo(() => [
+    { id: "m1",  target: 3,    progress: owned.length },
+    { id: "m2",  target: 8,    progress: owned.length },
+    { id: "m3",  target: 10,   progress: stats.finalHash },
+    { id: "m4",  target: 5,    progress: Object.values(upgrades).reduce((a,b)=>a+b,0) },
+    { id: "m5",  target: 100,  progress: stats.finalHash },
+    { id: "m6",  target: 20,   progress: owned.length },
+    { id: "m7",  target: 1000, progress: stats.finalHash },
+    { id: "m9",  target: 50,   progress: owned.length },
+  ], [owned.length, stats.finalHash, upgrades]);
+  const missionAlert = missionsList.some(m => m.progress >= m.target && !claimed[m.id]);
+  const dailyAlert = Date.now() - lastDaily >= DAY_MS;
+  const achievementsAlert = ACHIEVEMENTS.some(a => !achievementsClaimed[a.id] && achievementProgress(a.id) >= a.target);
+  const alerts: Record<string, boolean> = {
+    missions: missionAlert,
+    daily: dailyAlert,
+    achiev: achievementsAlert,
+  };
 
   return (
     <div className={`relative h-screen w-screen overflow-hidden text-foreground flex flex-col ${shake ? "shake" : ""}`}
@@ -399,14 +548,27 @@ export function Coinminers() {
         {/* Sidebar */}
         <aside className="w-full lg:w-[180px] flex lg:flex-col gap-1 p-2 border-b lg:border-b-0 lg:border-r border-[color:var(--metal-light)] overflow-x-auto cyber-scroll shrink-0"
           style={{ background: "linear-gradient(180deg, #14141d, #0a0a12)" }}>
-          {SIDEBAR.map(s => (
-            <button key={s.id}
-              onClick={() => setTab(s.id)}
-              className={`btn-cyber ${tab === s.id ? "active" : ""} text-left px-3 py-2 font-pixel text-[10px] flex items-center gap-2 rounded-sm shrink-0 whitespace-nowrap`}>
-              <span className="text-base leading-none w-5">{s.icon}</span>
-              <span>{s.label}</span>
-            </button>
-          ))}
+          {SIDEBAR.map(s => {
+            const hasAlert = alerts[s.id];
+            return (
+              <button key={s.id}
+                onClick={() => setTab(s.id)}
+                className={`btn-cyber ${tab === s.id ? "active" : ""} relative text-left px-3 py-2 font-pixel text-[10px] flex items-center gap-2 rounded-sm shrink-0 whitespace-nowrap`}>
+                <span className="text-base leading-none w-5">{s.icon}</span>
+                <span>{s.label}</span>
+                {hasAlert && (
+                  <span className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full"
+                    style={{ background: "var(--neon-red)", boxShadow: "0 0 6px var(--neon-red)", animation: "blink-led 1s ease-in-out infinite" }} />
+                )}
+              </button>
+            );
+          })}
+          {tokens > 0 && (
+            <div className="hidden lg:block metal-panel px-2 py-1 text-[10px]">
+              <div className="font-pixel text-neon-purple">◆ TOKENS</div>
+              <div className="font-mono-pixel text-base text-neon-orange">{tokens}</div>
+            </div>
+          )}
           <div className="hidden lg:block mt-auto metal-panel p-2 text-[10px]">
             <div className="font-pixel text-neon-cyan mb-1">FACILITY</div>
             <div className="font-mono-pixel text-base text-neon-orange">{currentFacility.name}</div>
@@ -431,6 +593,19 @@ export function Coinminers() {
               onBuyShelf={buyShelf} onEquip={equipGpu} onUnequip={unequipGpu} onSell={sellGpu} />
           ) : tab === "shop" || tab === "home" ? (
             <ShopPanel btc={btc} onBuy={buyGpu} capacity={shelfCapacity} owned={owned.filter(g=>g.equipped).length} stored={owned.filter(g=>!g.equipped).length} />
+          ) : tab === "shelves" ? (
+            <ShelvesPanel btc={btc} shelves={shelves} maxShelves={maxShelves} shelfCost={shelfCost}
+              capacity={currentFacility.capacity} onBuyShelf={buyShelf} />
+          ) : tab === "coolers" ? (
+            <CoolersPanel btc={btc} coolers={coolers} shelves={shelves}
+              onBuy={buyCooler} onAssign={assignCooler} onUnassign={unassignCooler} onSell={sellCooler} />
+          ) : tab === "generators" ? (
+            <GeneratorsPanel btc={btc} powers={powers} shelves={shelves}
+              onBuy={buyPower} onAssign={assignPower} onUnassign={unassignPower} onSell={sellPower} />
+          ) : tab === "achiev" ? (
+            <AchievementsPanel claimed={achievementsClaimed} progress={achievementProgress} onClaim={claimAchievement} />
+          ) : tab === "cosmetics" ? (
+            <CosmeticsPanel tokens={tokens} unlocked={cosmeticsUnlocked} />
           ) : tab === "research" ? (
             <ResearchPanel btc={btc} levels={research} onBuy={buyResearch} />
           ) : tab === "missions" ? (
@@ -533,7 +708,7 @@ function ShopPanel({ btc, onBuy, capacity, owned, stored }: { btc: number; onBuy
               </div>
               <div className="flex-1 min-w-0">
                 <div className="font-pixel text-[10px] text-neon-cyan truncate">{m.name}</div>
-                <div className="grid grid-cols-3 gap-1 mt-1.5 text-[12px] font-mono-pixel">
+                <div className="grid grid-cols-3 gap-0.5 mt-1.5 text-[10px] font-mono-pixel">
                   <Mini label="HASH" val={`${m.hashrate} TH`} c="var(--neon-cyan)" />
                   <Mini label="PWR"  val={`${m.power} kW`}  c="var(--neon-orange)" />
                   <Mini label="HEAT" val={`${m.heat}°`}    c="var(--neon-red)" />
@@ -558,9 +733,9 @@ function ShopPanel({ btc, onBuy, capacity, owned, stored }: { btc: number; onBuy
 
 function Mini({ label, val, c }: { label: string; val: string; c: string }) {
   return (
-    <div className="px-1.5 py-0.5 rounded-sm" style={{ background: "rgba(0,0,0,0.45)", border: "1px solid var(--metal-dark)" }}>
-      <div className="text-[8px] font-pixel text-muted-foreground leading-none">{label}</div>
-      <div className="font-mono-pixel leading-tight" style={{ color: c, textShadow: `0 0 4px ${c}` }}>{val}</div>
+    <div className="px-1 py-0.5 rounded-sm" style={{ background: "rgba(0,0,0,0.45)", border: "1px solid var(--metal-dark)" }}>
+      <div className="text-[7px] font-pixel text-muted-foreground leading-none">{label}</div>
+      <div className="font-mono-pixel text-[10px] leading-tight" style={{ color: c, textShadow: `0 0 4px ${c}` }}>{val}</div>
     </div>
   );
 }
@@ -939,6 +1114,8 @@ function MissionsPanel({ btc: _btc, owned, hashrate, upgradesCount, claimed, onC
     { id: "m4", name: "Tinkerer",       desc: "Buy 5 upgrades",         target: 5,   progress: upgradesCount, reward: 0.2,  icon: "⚙" },
     { id: "m5", name: "Scale Up",       desc: "Reach 100 TH/s",         target: 100, progress: hashrate,      reward: 4,    icon: "▲" },
     { id: "m6", name: "Mining Tycoon",  desc: "Own 20 GPUs",            target: 20,  progress: owned,         reward: 6,    icon: "♛" },
+    { id: "m7", name: "Petahash Push",  desc: "Reach 1,000 TH/s",       target: 1000,progress: hashrate,      reward: 30,   icon: "⚡" },
+    { id: "m9", name: "Empire State",   desc: "Own 50 GPUs",            target: 50,  progress: owned,         reward: 18,   icon: "▦" },
   ];
   return (
     <div className="p-3 space-y-2">

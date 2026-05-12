@@ -83,8 +83,8 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
-    font-family: "Press Start 2P", "VT323", monospace;
-    font-size: 11px;
+    font-family: "VT323", "Press Start 2P", monospace;
+    font-size: 15px;
     overflow: hidden;
     image-rendering: pixelated;
     image-rendering: -moz-crisp-edges;
@@ -96,6 +96,7 @@
   svg { shape-rendering: crispEdges; }
   button, .metal-panel, .btn-cyber, .btn-buy { border-radius: 0 !important; }
   input, select, textarea, .font-mono-pixel { font-family: "VT323", monospace; }
+  .font-pixel { font-family: "Press Start 2P", "VT323", monospace; letter-spacing: 0.5px; }
 }
 
 .font-pixel { font-family: "Press Start 2P", monospace; letter-spacing: 0.02em; }

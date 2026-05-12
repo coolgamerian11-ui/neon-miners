@@ -1,8 +1,9 @@
+import { memo } from "react";
 import type { GpuModel } from "./types";
 import { MFG_BY_TIER } from "./data";
 
 /** Detailed pixel-art GPU rendered in pure SVG. */
-export function PixelGpu({ model, idx, large = false, heatPct = 0.4 }:
+function PixelGpuInner({ model, idx, large = false, heatPct = 0.4 }:
   { model: GpuModel; idx: number; large?: boolean; heatPct?: number }) {
   const c = model.color;
   const tier = model.tier;
@@ -176,3 +177,5 @@ export function PixelGpu({ model, idx, large = false, heatPct = 0.4 }:
     </div>
   );
 }
+
+export const PixelGpu = memo(PixelGpuInner);

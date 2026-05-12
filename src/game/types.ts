@@ -14,6 +14,40 @@ export interface GpuModel {
 
 export interface OwnedGpu { id: string; modelId: string; equipped: boolean; }
 
+export type GearTier = "basic" | "standard" | "advanced" | "elite" | "mythic";
+
+export interface CoolerModel {
+  id: string;
+  name: string;
+  tier: GearTier;
+  cooling: number;     // heat removed
+  basePrice: number;
+  color: string;
+}
+
+export interface PowerModel {
+  id: string;
+  name: string;
+  tier: GearTier;
+  capacity: number;    // kW supplied
+  basePrice: number;
+  color: string;
+}
+
+/** Per-shelf assignments. Map shelf-index -> equipped item id. */
+export interface OwnedCooler { id: string; modelId: string; shelf: number | null; }
+export interface OwnedPower  { id: string; modelId: string; shelf: number | null; }
+
+export interface Achievement {
+  id: string;
+  name: string;
+  desc: string;
+  target: number;
+  metric: "owned" | "hashrate" | "upgrades" | "shelves" | "prestige" | "totalEarned" | "facility";
+  reward: { tokens?: number; cosmetic?: string };
+  icon: string;
+}
+
 export interface Upgrade {
   id: string;
   name: string;
