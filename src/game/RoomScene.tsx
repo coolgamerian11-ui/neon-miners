@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { memo, useMemo } from "react";
 import type { OwnedGpu } from "./types";
 import { Ambience } from "./Ambience";
 import { Clutter } from "./Clutter";
@@ -6,7 +6,7 @@ import { MiningRack, type RackTier } from "./MiningRack";
 import { FacilityDecor, getFacilityVisuals } from "./FacilityTheme";
 
 /** Garage / facility room with deep environmental detail */
-export function RoomScene({ owned, hashrate, heat, shelves = 2, facility = "garage" }:
+function RoomSceneInner({ owned, hashrate, heat, shelves = 2, facility = "garage" }:
   { owned: OwnedGpu[]; hashrate: number; heat: number; shelves?: number; facility?: string }) {
   const perShelf = 4;
   const slots = shelves * perShelf;
