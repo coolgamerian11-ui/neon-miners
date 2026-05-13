@@ -1,7 +1,9 @@
 import { memo } from "react";
-import type { OwnedGpu, GpuModel } from "./types";
-import { GPU_MODELS } from "./data";
+import type { OwnedGpu, GpuModel, OwnedCooler, OwnedPower, Carry, ShelfType } from "./types";
+import { GPU_MODELS, COOLER_MODELS, POWER_MODELS, ASIC_GPU_IDS } from "./data";
 import { PixelGpu } from "./PixelGpu";
+import { PixelCooler } from "./PixelCooler";
+import { PixelGenerator } from "./PixelGenerator";
 
 export type RackTier = "starter" | "mid" | "endgame";
 
@@ -10,6 +12,13 @@ interface Props {
   perShelf?: number;
   row: (OwnedGpu | undefined)[];
   tier: RackTier;
+  shelfType?: ShelfType;
+  cooler?: OwnedCooler | null;
+  power?: OwnedPower | null;
+  carry?: Carry | null;
+  onSlotClick?: (shelfIdx: number, slotIdx: number) => void;
+  onCoolerSlotClick?: (shelfIdx: number) => void;
+  onPowerSlotClick?: (shelfIdx: number) => void;
 }
 
 const TIER_STYLE: Record<RackTier, {
@@ -36,21 +45,36 @@ const TIER_STYLE: Record<RackTier, {
   },
 };
 
-function MiningRackInner({ index, perShelf = 4, row, tier }: Props) {
+function MiningRackInner({ index, perShelf = 4, row, tier, shelfType = "standard",
+  cooler = null, power = null, carry = null,
+  onSlotClick, onCoolerSlotClick, onPowerSlotClick }: Props) {
   const s = TIER_STYLE[tier];
+  const isAsic = shelfType === "asic";
   const filledCount = row.filter(Boolean).length;
   const active = filledCount > 0;
   const heatPct = filledCount / perShelf;
+
+  const carryGpuModel = carry?.kind === "gpu" ? GPU_MODELS.find(m => m.id.startsWith("") /* dummy */) : null;
+  // We don't have the GPU model from carry id directly (carry holds OwnedGpu id),
+  // so the parent just passes carry through; whether a GPU drop is allowed is
+  // decided in the click handler. The slot just highlights for any GPU carry.
+  void carryGpuModel;
+
+  const gpuHighlight = !!carry && carry.kind === "gpu";
+  const coolerHighlight = !!carry && carry.kind === "cooler";
+  const powerHighlight = !!carry && carry.kind === "power";
 
   return (
     <div className="relative" style={{ marginLeft: 18, marginRight: 18 }}>
       {/* ─── Top vent / cooling header ─── */}
       <div className="relative h-7 flex items-stretch"
         style={{
-          background: `linear-gradient(180deg, ${s.frameTop}, ${s.frameBot})`,
-          border: "1px solid #000",
+          background: `linear-gradient(180deg, ${isAsic ? "#3a2a10" : s.frameTop}, ${isAsic ? "#1a1208" : s.frameBot})`,
+          border: `1px solid ${isAsic ? "#caa018" : "#000"}`,
           borderBottom: "2px solid #000",
-          boxShadow: `inset 0 1px 0 #4a4a55, inset 0 -2px 0 #000`,
+          boxShadow: isAsic
+            ? `inset 0 1px 0 #d4b830, inset 0 -2px 0 #000, 0 0 6px rgba(202,160,24,0.6)`
+            : `inset 0 1px 0 #4a4a55, inset 0 -2px 0 #000`,
         }}>
         {/* Vent louvers */}
         <div className="flex-1 mx-1 my-1 relative overflow-hidden"
@@ -146,7 +170,12 @@ function MiningRackInner({ index, perShelf = 4, row, tier }: Props) {
             {Array.from({ length: perShelf }).map((_, i) => {
               const g = row[i];
               const model: GpuModel | null = g ? (GPU_MODELS.find(m => m.id === g.modelId) ?? null) : null;
-              return <Slot key={i} idx={index * perShelf + i} model={model} tier={tier} />;
+            return (
+              <Slot key={i} idx={index * perShelf + i} model={model} tier={tier}
+                highlight={gpuHighlight && !model}
+                isAsic={isAsic}
+                onClick={() => onSlotClick?.(index, i)} />
+            );
             })}
           </div>
 
@@ -192,6 +221,46 @@ function MiningRackInner({ index, perShelf = 4, row, tier }: Props) {
         </div>
       </div>
 
+      {/* ─── Cooler + Generator gear slots row ─── */}
+      <div className="flex gap-1 mt-1 px-1">
+        <GearSlot kind="cooler" highlight={coolerHighlight} occupied={!!cooler}
+          accent={s.accent2}
+          onClick={() => onCoolerSlotClick?.(index)}>
+          {cooler ? (() => {
+            const m = COOLER_MODELS.find(x => x.id === cooler.modelId);
+            return m ? (
+              <div className="flex items-center gap-1 w-full">
+                <PixelCooler model={m} size={26} />
+                <div className="flex-1 min-w-0">
+                  <div className="font-pixel text-[8px] truncate" style={{ color: m.color }}>{m.name}</div>
+                  <div className="font-mono-pixel text-[8px] text-muted-foreground">−{m.cooling}° heat</div>
+                </div>
+              </div>
+            ) : null;
+          })() : (
+            <span className="font-pixel text-[8px] text-muted-foreground">❄ COOLER SLOT</span>
+          )}
+        </GearSlot>
+        <GearSlot kind="power" highlight={powerHighlight} occupied={!!power}
+          accent="var(--neon-orange)"
+          onClick={() => onPowerSlotClick?.(index)}>
+          {power ? (() => {
+            const m = POWER_MODELS.find(x => x.id === power.modelId);
+            return m ? (
+              <div className="flex items-center gap-1 w-full">
+                <PixelGenerator model={m} size={26} />
+                <div className="flex-1 min-w-0">
+                  <div className="font-pixel text-[8px] truncate" style={{ color: m.color }}>{m.name}</div>
+                  <div className="font-mono-pixel text-[8px] text-muted-foreground">{m.capacity} kW</div>
+                </div>
+              </div>
+            ) : null;
+          })() : (
+            <span className="font-pixel text-[8px] text-muted-foreground">⚡ GENERATOR SLOT</span>
+          )}
+        </GearSlot>
+      </div>
+
       {/* ─── Cable bundle leaving the bottom ─── */}
       <svg className="block w-full h-3" viewBox="0 0 100 12" preserveAspectRatio="none">
         <path d="M20 0 Q22 8 30 12" stroke="#000" strokeWidth="2" fill="none" />
@@ -203,9 +272,11 @@ function MiningRackInner({ index, perShelf = 4, row, tier }: Props) {
 
       {/* ─── Side ID label tag ─── */}
       <div className="absolute -left-3 -top-2 px-1.5 py-0.5 font-pixel text-[8px]"
-        style={{ background: "#0a0a0e", color: s.accent, border: `1px solid ${s.accent}`,
-                 boxShadow: `0 0 6px ${s.accent}` }}>
-        {s.label}·{String(index + 1).padStart(2, "0")}
+        style={{ background: "#0a0a0e",
+                 color: isAsic ? "#caa018" : s.accent,
+                 border: `1px solid ${isAsic ? "#caa018" : s.accent}`,
+                 boxShadow: `0 0 6px ${isAsic ? "#caa018" : s.accent}` }}>
+        {isAsic ? "ASIC·BAY" : s.label}·{String(index + 1).padStart(2, "0")}
       </div>
 
       {/* High-voltage warning sticker */}
