@@ -168,25 +168,29 @@ export function AchievementsPanel({ claimed, progress, onClaim }:
 }
 
 /* ---------- COSMETICS ---------- */
-const COSMETIC_CATALOG = [
-  { id: "skin-frame-bronze",  name: "Bronze Frame",      cat: "GPU Skin",   cost: 2 },
-  { id: "skin-frame-silver",  name: "Silver Frame",      cat: "GPU Skin",   cost: 4 },
-  { id: "skin-frame-gold",    name: "Gold Frame",        cat: "GPU Skin",   cost: 8 },
-  { id: "skin-frame-neon",    name: "Neon Frame",        cat: "GPU Skin",   cost: 12 },
-  { id: "skin-led-cyan",      name: "Cyan LEDs",         cat: "GPU LED",    cost: 3 },
-  { id: "skin-led-purple",    name: "Purple LEDs",       cat: "GPU LED",    cost: 6 },
-  { id: "skin-led-rainbow",   name: "Rainbow LEDs",      cat: "GPU LED",    cost: 15 },
-  { id: "shelf-neon-blue",    name: "Blue Shelf Trim",   cat: "Shelf",      cost: 4 },
-  { id: "shelf-neon-purple",  name: "Purple Shelf Trim", cat: "Shelf",      cost: 8 },
-  { id: "bg-rain",            name: "Rainstorm BG",      cat: "Background", cost: 5 },
-  { id: "bg-storm",           name: "Cyber Storm BG",    cat: "Background", cost: 10 },
-  { id: "bg-aurora",          name: "Aurora BG",         cat: "Background", cost: 12 },
-  { id: "bg-galaxy",          name: "Galaxy BG",         cat: "Background", cost: 20 },
-  { id: "bg-vault",           name: "Vault BG",          cat: "Background", cost: 25 },
+type CosmeticCat = "gpuFrame" | "gpuLed" | "shelfTrim" | "background";
+export const COSMETIC_CATALOG: { id: string; name: string; cat: CosmeticCat; catLabel: string; cost: number; color: string }[] = [
+  { id: "skin-frame-bronze",  name: "Bronze Frame",      cat: "gpuFrame",   catLabel: "GPU Frame", cost: 2,  color: "#b07a30" },
+  { id: "skin-frame-silver",  name: "Silver Frame",      cat: "gpuFrame",   catLabel: "GPU Frame", cost: 4,  color: "#c0c4cc" },
+  { id: "skin-frame-gold",    name: "Gold Frame",        cat: "gpuFrame",   catLabel: "GPU Frame", cost: 8,  color: "#e8c040" },
+  { id: "skin-frame-neon",    name: "Neon Frame",        cat: "gpuFrame",   catLabel: "GPU Frame", cost: 12, color: "var(--neon-cyan)" },
+  { id: "skin-led-cyan",      name: "Cyan LEDs",         cat: "gpuLed",     catLabel: "GPU LED",   cost: 3,  color: "var(--neon-cyan)" },
+  { id: "skin-led-purple",    name: "Purple LEDs",       cat: "gpuLed",     catLabel: "GPU LED",   cost: 6,  color: "var(--neon-purple)" },
+  { id: "skin-led-rainbow",   name: "Rainbow LEDs",      cat: "gpuLed",     catLabel: "GPU LED",   cost: 15, color: "var(--neon-green)" },
+  { id: "shelf-neon-blue",    name: "Blue Shelf Trim",   cat: "shelfTrim",  catLabel: "Shelf",     cost: 4,  color: "var(--neon-blue)" },
+  { id: "shelf-neon-purple",  name: "Purple Shelf Trim", cat: "shelfTrim",  catLabel: "Shelf",     cost: 8,  color: "var(--neon-purple)" },
+  { id: "bg-rain",            name: "Rainstorm BG",      cat: "background", catLabel: "Background",cost: 5,  color: "#3060a0" },
+  { id: "bg-storm",           name: "Cyber Storm BG",    cat: "background", catLabel: "Background",cost: 10, color: "var(--neon-purple)" },
+  { id: "bg-aurora",          name: "Aurora BG",         cat: "background", catLabel: "Background",cost: 12, color: "var(--neon-green)" },
+  { id: "bg-galaxy",          name: "Galaxy BG",         cat: "background", catLabel: "Background",cost: 20, color: "var(--neon-purple)" },
+  { id: "bg-vault",           name: "Vault BG",          cat: "background", catLabel: "Background",cost: 25, color: "var(--neon-orange)" },
 ];
 
-export function CosmeticsPanel({ tokens, unlocked }:
-  { tokens: number; unlocked: Record<string, boolean> }) {
+export function CosmeticsPanel({ tokens, unlocked, equipped, onBuy, onEquip, onUnequip }:
+  { tokens: number; unlocked: Record<string, boolean>; equipped: CosmeticsEquipped;
+    onBuy: (id: string) => void;
+    onEquip: (cat: keyof CosmeticsEquipped, id: string) => void;
+    onUnequip: (cat: keyof CosmeticsEquipped) => void; }) {
   return (
     <div className="p-3 space-y-2">
       <div className="flex items-center justify-between">
@@ -194,29 +198,37 @@ export function CosmeticsPanel({ tokens, unlocked }:
         <span className="font-pixel text-[11px] text-neon-orange">◆ {tokens}</span>
       </div>
       <div className="font-mono-pixel text-[13px] text-muted-foreground">
-        Earn ◆ tokens from achievements. Cosmetic-only — no stat boost.
+        Earn ◆ from achievements or buy here. Equip one per category.
       </div>
       {COSMETIC_CATALOG.map(c => {
-        const owned = unlocked[c.id];
+        const owned = !!unlocked[c.id];
+        const isEquipped = equipped[c.cat] === c.id;
+        const canBuy = !owned && tokens >= c.cost;
         return (
-          <div key={c.id} className={`metal-panel p-2 flex items-center gap-2 ${owned ? "neon-frame" : ""}`}>
-            <div className="w-6 h-6 flex items-center justify-center font-pixel text-[10px]"
-              style={{ background: owned ? "var(--neon-green)" : "var(--metal-mid)", color: "#000" }}>◆</div>
+          <div key={c.id} className={`metal-panel p-2 flex items-center gap-2 ${isEquipped ? "neon-frame" : ""}`}>
+            <div className="w-7 h-7 flex items-center justify-center font-pixel text-[10px]"
+              style={{ background: c.color, color: "#000", border: "1px solid #000" }}>◆</div>
             <div className="flex-1 min-w-0">
-              <div className="font-pixel text-[10px] text-neon-cyan">{c.name}</div>
-              <div className="font-mono-pixel text-[11px] text-muted-foreground">{c.cat}</div>
+              <div className="font-pixel text-[10px] text-neon-cyan truncate">{c.name}</div>
+              <div className="font-mono-pixel text-[11px] text-muted-foreground">{c.catLabel}</div>
             </div>
-            {owned ? (
-              <span className="font-pixel text-[9px] text-neon-green">✓ UNLOCKED</span>
+            {!owned ? (
+              <button onClick={() => onBuy(c.id)} disabled={!canBuy}
+                className="btn-buy px-2 py-1 font-pixel text-[9px]">
+                ◆ {c.cost}
+              </button>
+            ) : isEquipped ? (
+              <button onClick={() => onUnequip(c.cat)} className="btn-cyber px-2 py-1 font-pixel text-[9px] text-neon-green">
+                ✓ EQUIPPED
+              </button>
             ) : (
-              <span className="font-pixel text-[9px] text-neon-purple">◆ {c.cost}</span>
+              <button onClick={() => onEquip(c.cat, c.id)} className="btn-buy px-2 py-1 font-pixel text-[9px]">
+                EQUIP
+              </button>
             )}
           </div>
         );
       })}
-      <div className="font-mono-pixel text-[11px] text-muted-foreground text-center pt-2">
-        Direct purchase coming soon — for now unlock via achievements.
-      </div>
     </div>
   );
 }
