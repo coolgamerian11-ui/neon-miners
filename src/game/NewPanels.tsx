@@ -18,15 +18,18 @@ const TIER_COLOR: Record<string, string> = {
 };
 
 /* ---------- SHELVES ---------- */
-export function ShelvesPanel({ btc, shelves, maxShelves, shelfCost, capacity, onBuyShelf }:
-  { btc: number; shelves: number; maxShelves: number; shelfCost: number; capacity: number; onBuyShelf: () => void }) {
+export function ShelvesPanel({ btc, shelves, maxShelves, shelfCost, capacity, onBuyShelf,
+  asicShelfCost, onBuyAsicShelf }:
+  { btc: number; shelves: number; maxShelves: number; shelfCost: number; capacity: number;
+    onBuyShelf: () => void; asicShelfCost: number; onBuyAsicShelf: () => void }) {
   const can = btc >= shelfCost && shelves < maxShelves;
+  const canAsic = btc >= asicShelfCost && shelves < maxShelves;
   const atMax = shelves >= maxShelves;
   return (
     <div className="p-3 space-y-3">
       <h2 className="font-pixel text-[11px] text-neon-cyan">▥ SHELVES</h2>
       <div className="font-mono-pixel text-[14px] text-muted-foreground">
-        Each shelf adds 4 GPU slots, plus a slot for one cooler and one power supply.
+        Each shelf has 4 GPU slots, a ❄ cooler slot and a ⚡ generator slot. ASIC shelves only mount ASIC-class miners.
       </div>
       <div className="metal-panel p-3 neon-frame">
         <div className="flex items-center justify-between mb-1">
@@ -38,15 +41,28 @@ export function ShelvesPanel({ btc, shelves, maxShelves, shelfCost, capacity, on
         </div>
       </div>
       <div className="metal-panel p-3">
-        <div className="font-pixel text-[10px] text-neon-cyan mb-1">+ NEW SHELF</div>
+        <div className="font-pixel text-[10px] text-neon-cyan mb-1">+ STANDARD SHELF</div>
         <div className="font-mono-pixel text-[12px] text-muted-foreground mb-3">
-          Adds 4 GPU slots, 1 cooler slot, 1 power slot.
+          Holds GTX/RTX/RX-class GPUs. 4 GPU + 1 cooler + 1 generator slot.
         </div>
         <div className="flex items-center justify-between">
           <span className="font-pixel text-[12px] btc-text">₿ {fmtBtc(shelfCost)}</span>
           <button onClick={onBuyShelf} disabled={!can}
             className="btn-buy px-4 py-2 font-pixel text-[10px]">
             {atMax ? "MAX" : "BUY SHELF ▶"}
+          </button>
+        </div>
+      </div>
+      <div className="metal-panel p-3" style={{ borderColor: "#caa018", boxShadow: "0 0 10px rgba(202,160,24,0.4)" }}>
+        <div className="font-pixel text-[10px] mb-1" style={{ color: "#caa018", textShadow: "0 0 4px #caa018" }}>+ ASIC SHELF</div>
+        <div className="font-mono-pixel text-[12px] text-muted-foreground mb-3">
+          Reinforced industrial mount for ASIC / FPGA / Quantum miners only. Heavier frame, gold trim.
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="font-pixel text-[12px] btc-text">₿ {fmtBtc(asicShelfCost)}</span>
+          <button onClick={onBuyAsicShelf} disabled={!canAsic}
+            className="btn-buy px-4 py-2 font-pixel text-[10px]">
+            {atMax ? "MAX" : "BUY ASIC ▶"}
           </button>
         </div>
       </div>
