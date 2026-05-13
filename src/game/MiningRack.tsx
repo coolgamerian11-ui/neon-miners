@@ -334,18 +334,22 @@ function Beam({ side, tier }: { side: "left" | "right"; tier: RackTier }) {
   );
 }
 
-function Slot({ idx, model, tier }: { idx: number; model: GpuModel | null; tier: RackTier }) {
+function Slot({ idx, model, tier, highlight = false, isAsic = false, onClick }:
+  { idx: number; model: GpuModel | null; tier: RackTier;
+    highlight?: boolean; isAsic?: boolean; onClick?: () => void }) {
   const s = TIER_STYLE[tier];
+  const accent = isAsic ? "#caa018" : s.accent;
   return (
-    <div className="relative h-[78px] flex items-end justify-center"
+    <div onClick={onClick} className="relative h-[78px] flex items-end justify-center cursor-pointer"
       style={{
         background:
           "linear-gradient(180deg, #08080c, #02020610), " +
           "repeating-linear-gradient(90deg, transparent 0 6px, rgba(255,255,255,0.02) 6px 7px)",
-        border: "1px solid #000",
+        border: highlight ? `1px solid var(--neon-green)` : "1px solid #000",
         boxShadow: model
-          ? `inset 0 0 8px ${s.accent}33, inset 0 0 0 1px ${s.accent}55`
-          : "inset 0 0 6px #000",
+          ? `inset 0 0 8px ${accent}33, inset 0 0 0 1px ${accent}55`
+          : highlight ? "inset 0 0 10px var(--neon-green), 0 0 8px var(--neon-green)"
+                      : "inset 0 0 6px #000",
       }}>
       {/* Slot index */}
       <span className="absolute top-0.5 left-0.5 font-pixel text-[7px]"
@@ -405,6 +409,25 @@ function Slot({ idx, model, tier }: { idx: number; model: GpuModel | null; tier:
           }} />
       )}
     </div>
+  );
+}
+
+function GearSlot({ kind, highlight, occupied, accent, onClick, children }:
+  { kind: "cooler" | "power"; highlight: boolean; occupied: boolean; accent: string;
+    onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button onClick={onClick}
+      className="flex-1 flex items-center justify-start gap-1 px-1 py-0.5 text-left"
+      style={{
+        background: occupied ? "rgba(0,0,0,0.55)" : "rgba(0,0,0,0.35)",
+        border: highlight ? "1px solid var(--neon-green)" : `1px solid ${accent}55`,
+        boxShadow: highlight ? "0 0 8px var(--neon-green), inset 0 0 6px var(--neon-green)"
+                             : occupied ? `inset 0 0 6px ${accent}33` : "none",
+        minHeight: 30,
+      }}>
+      <span aria-hidden className="sr-only">{kind}</span>
+      {children}
+    </button>
   );
 }
 
