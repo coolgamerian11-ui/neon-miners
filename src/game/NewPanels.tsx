@@ -1,5 +1,7 @@
 import { COOLER_MODELS, POWER_MODELS, ACHIEVEMENTS } from "./data";
-import type { OwnedCooler, OwnedPower } from "./types";
+import type { CosmeticsEquipped } from "./types";
+import { PixelCooler } from "./PixelCooler";
+import { PixelGenerator } from "./PixelGenerator";
 
 const fmtBtc = (n: number) => {
   if (n >= 1000) return n.toFixed(2);
@@ -52,80 +54,22 @@ export function ShelvesPanel({ btc, shelves, maxShelves, shelfCost, capacity, on
   );
 }
 
-/* ---------- COOLERS ---------- */
-export function CoolersPanel({ btc, coolers, shelves, onBuy, onAssign, onUnassign, onSell }:
-  { btc: number; coolers: OwnedCooler[]; shelves: number;
-    onBuy: (id: string) => void; onAssign: (cid: string, shelf: number) => void;
-    onUnassign: (cid: string) => void; onSell: (cid: string) => void }) {
+/* ---------- COOLERS (shop only) ---------- */
+export function CoolersPanel({ btc, onBuy }:
+  { btc: number; onBuy: (id: string) => void }) {
   return (
     <div className="p-3 space-y-3">
       <h2 className="font-pixel text-[11px] text-neon-cyan">❄ COOLERS</h2>
       <div className="font-mono-pixel text-[13px] text-muted-foreground">
-        One cooler per shelf. Higher tier = more heat removed = more hashrate.
+        Buy coolers here — then drag from the bottom inventory dock onto a shelf's ❄ slot.
       </div>
-
-      {/* Shelf assignments */}
-      <div className="metal-panel p-2 space-y-1">
-        <div className="font-pixel text-[10px] text-neon-orange mb-1">SHELF SLOTS</div>
-        {Array.from({ length: shelves }).map((_, s) => {
-          const c = coolers.find(x => x.shelf === s);
-          const m = c ? COOLER_MODELS.find(x => x.id === c.modelId) : null;
-          return (
-            <div key={s} className="flex items-center justify-between gap-2 px-2 py-1 border border-[color:var(--metal-dark)]"
-              style={{ background: "rgba(0,0,0,0.4)" }}>
-              <span className="font-pixel text-[9px] text-neon-cyan">SHELF {String(s+1).padStart(2,"0")}</span>
-              {m ? (
-                <>
-                  <span className="font-mono-pixel text-[12px]" style={{ color: TIER_COLOR[m.tier] }}>{m.name} · −{m.cooling}°</span>
-                  <button onClick={() => onUnassign(c!.id)} className="btn-cyber px-2 py-0.5 font-pixel text-[8px] text-neon-red">REMOVE</button>
-                </>
-              ) : (
-                <span className="font-pixel text-[9px] text-muted-foreground">— EMPTY —</span>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Inventory */}
-      <div className="metal-panel p-2">
-        <div className="font-pixel text-[10px] text-neon-purple mb-1">INVENTORY ({coolers.filter(c=>c.shelf==null).length})</div>
-        {coolers.filter(c => c.shelf == null).length === 0 ? (
-          <div className="text-center py-2 font-pixel text-[8px] text-muted-foreground">— EMPTY — buy below</div>
-        ) : (
-          <div className="grid grid-cols-1 gap-1">
-            {coolers.filter(c => c.shelf == null).map(c => {
-              const m = COOLER_MODELS.find(x => x.id === c.modelId)!;
-              return (
-                <div key={c.id} className="flex items-center gap-1 p-1 border border-[color:var(--metal-dark)]"
-                  style={{ background: "rgba(0,0,0,0.4)" }}>
-                  <span className="font-pixel text-[9px] flex-1" style={{ color: TIER_COLOR[m.tier] }}>{m.name}</span>
-                  <span className="font-mono-pixel text-[11px] text-neon-cyan">−{m.cooling}°</span>
-                  <select onChange={(e) => { if (e.target.value) onAssign(c.id, +e.target.value); }}
-                    defaultValue=""
-                    className="font-mono-pixel text-[11px] bg-black/60 border border-[color:var(--metal-dark)] px-1 py-0.5">
-                    <option value="">→ shelf…</option>
-                    {Array.from({ length: shelves }).map((_, s) => (
-                      <option key={s} value={s}>S{s+1}</option>
-                    ))}
-                  </select>
-                  <button onClick={() => onSell(c.id)} className="btn-cyber px-1.5 py-0.5 font-pixel text-[8px] text-neon-red">SELL</button>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* Shop */}
       <div className="space-y-2">
         <div className="font-pixel text-[10px] text-neon-orange">▶ SHOP</div>
         {COOLER_MODELS.map(m => {
           const can = btc >= m.basePrice;
           return (
             <div key={m.id} className="metal-panel p-2 flex items-center gap-2">
-              <div className="w-6 h-6 flex items-center justify-center font-pixel text-[10px]"
-                style={{ background: TIER_COLOR[m.tier], color: "#000" }}>❄</div>
+              <PixelCooler model={m} size={36} />
               <div className="flex-1 min-w-0">
                 <div className="font-pixel text-[10px]" style={{ color: TIER_COLOR[m.tier] }}>{m.name}</div>
                 <div className="font-mono-pixel text-[12px] text-muted-foreground">−{m.cooling}° heat · {m.tier}</div>
@@ -141,65 +85,14 @@ export function CoolersPanel({ btc, coolers, shelves, onBuy, onAssign, onUnassig
   );
 }
 
-/* ---------- GENERATORS ---------- */
-export function GeneratorsPanel({ btc, powers, shelves, onBuy, onAssign, onUnassign, onSell }:
-  { btc: number; powers: OwnedPower[]; shelves: number;
-    onBuy: (id: string) => void; onAssign: (pid: string, shelf: number) => void;
-    onUnassign: (pid: string) => void; onSell: (pid: string) => void }) {
+/* ---------- GENERATORS (shop only) ---------- */
+export function GeneratorsPanel({ btc, onBuy }:
+  { btc: number; onBuy: (id: string) => void }) {
   return (
     <div className="p-3 space-y-3">
       <h2 className="font-pixel text-[11px] text-neon-orange">⚡ GENERATORS</h2>
       <div className="font-mono-pixel text-[13px] text-muted-foreground">
-        One PSU per shelf. If supplied power &lt; demand, hashrate drops fast.
-      </div>
-      <div className="metal-panel p-2 space-y-1">
-        <div className="font-pixel text-[10px] text-neon-orange mb-1">SHELF SLOTS</div>
-        {Array.from({ length: shelves }).map((_, s) => {
-          const p = powers.find(x => x.shelf === s);
-          const m = p ? POWER_MODELS.find(x => x.id === p.modelId) : null;
-          return (
-            <div key={s} className="flex items-center justify-between gap-2 px-2 py-1 border border-[color:var(--metal-dark)]"
-              style={{ background: "rgba(0,0,0,0.4)" }}>
-              <span className="font-pixel text-[9px] text-neon-cyan">SHELF {String(s+1).padStart(2,"0")}</span>
-              {m ? (
-                <>
-                  <span className="font-mono-pixel text-[12px]" style={{ color: TIER_COLOR[m.tier] }}>{m.name} · {m.capacity}kW</span>
-                  <button onClick={() => onUnassign(p!.id)} className="btn-cyber px-2 py-0.5 font-pixel text-[8px] text-neon-red">REMOVE</button>
-                </>
-              ) : (
-                <span className="font-pixel text-[9px] text-neon-red">— NO POWER —</span>
-              )}
-            </div>
-          );
-        })}
-      </div>
-      <div className="metal-panel p-2">
-        <div className="font-pixel text-[10px] text-neon-purple mb-1">INVENTORY ({powers.filter(p=>p.shelf==null).length})</div>
-        {powers.filter(p => p.shelf == null).length === 0 ? (
-          <div className="text-center py-2 font-pixel text-[8px] text-muted-foreground">— EMPTY — buy below</div>
-        ) : (
-          <div className="grid grid-cols-1 gap-1">
-            {powers.filter(p => p.shelf == null).map(p => {
-              const m = POWER_MODELS.find(x => x.id === p.modelId)!;
-              return (
-                <div key={p.id} className="flex items-center gap-1 p-1 border border-[color:var(--metal-dark)]"
-                  style={{ background: "rgba(0,0,0,0.4)" }}>
-                  <span className="font-pixel text-[9px] flex-1" style={{ color: TIER_COLOR[m.tier] }}>{m.name}</span>
-                  <span className="font-mono-pixel text-[11px] text-neon-orange">{m.capacity}kW</span>
-                  <select onChange={(e) => { if (e.target.value) onAssign(p.id, +e.target.value); }}
-                    defaultValue=""
-                    className="font-mono-pixel text-[11px] bg-black/60 border border-[color:var(--metal-dark)] px-1 py-0.5">
-                    <option value="">→ shelf…</option>
-                    {Array.from({ length: shelves }).map((_, s) => (
-                      <option key={s} value={s}>S{s+1}</option>
-                    ))}
-                  </select>
-                  <button onClick={() => onSell(p.id)} className="btn-cyber px-1.5 py-0.5 font-pixel text-[8px] text-neon-red">SELL</button>
-                </div>
-              );
-            })}
-          </div>
-        )}
+        Buy generators here — drag from the bottom inventory dock onto a shelf's ⚡ slot.
       </div>
       <div className="space-y-2">
         <div className="font-pixel text-[10px] text-neon-orange">▶ SHOP</div>
@@ -207,8 +100,7 @@ export function GeneratorsPanel({ btc, powers, shelves, onBuy, onAssign, onUnass
           const can = btc >= m.basePrice;
           return (
             <div key={m.id} className="metal-panel p-2 flex items-center gap-2">
-              <div className="w-6 h-6 flex items-center justify-center font-pixel text-[10px]"
-                style={{ background: TIER_COLOR[m.tier], color: "#000" }}>⚡</div>
+              <PixelGenerator model={m} size={36} />
               <div className="flex-1 min-w-0">
                 <div className="font-pixel text-[10px]" style={{ color: TIER_COLOR[m.tier] }}>{m.name}</div>
                 <div className="font-mono-pixel text-[12px] text-muted-foreground">{m.capacity}kW · {m.tier}</div>
