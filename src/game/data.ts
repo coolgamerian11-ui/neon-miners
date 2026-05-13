@@ -31,6 +31,13 @@ export const GPU_MODELS: GpuModel[] = [
   { id: "singularity", name: "Singularity Σ",   tier: "quantum", hashrate: 22000,power: 5.2,  heat: 12, basePrice: 48000,  color: "var(--neon-green)",  rarity: "Mythic" },
 ];
 
+/** GPUs that require an ASIC shelf (dedicated industrial mounts). */
+export const ASIC_GPU_IDS = new Set<string>([
+  "asic-s19", "fpga-x", "qubit", "void", "nova", "singularity",
+]);
+export const ASIC_SHELF_BASE_COST = 0.2;
+
+
 export const UPGRADES: Upgrade[] = [
   { id: "cool",   name: "Cooling Array",     desc: "+15% hashrate per level (lower heat)",  basePrice: 0.02, bonus: 0.15, max: 25, icon: "❄" },
   { id: "psu",    name: "Power Supply",      desc: "-8% power draw per level",              basePrice: 0.05, bonus: 0.08, max: 20, icon: "⚡" },
