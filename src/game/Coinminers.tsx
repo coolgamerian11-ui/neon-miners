@@ -1,9 +1,10 @@
 import { memo, useEffect, useMemo, useRef, useState } from "react";
-import { GPU_MODELS, UPGRADES, FACILITIES, SIDEBAR, COOLER_MODELS, POWER_MODELS, ACHIEVEMENTS } from "./data";
-import type { OwnedGpu, OwnedCooler, OwnedPower } from "./types";
+import { GPU_MODELS, UPGRADES, FACILITIES, SIDEBAR, COOLER_MODELS, POWER_MODELS, ACHIEVEMENTS, ASIC_GPU_IDS, ASIC_SHELF_BASE_COST } from "./data";
+import type { OwnedGpu, OwnedCooler, OwnedPower, ShelfType, CosmeticsEquipped, Carry } from "./types";
 import { PixelGpu } from "./PixelGpu";
 import { RoomScene } from "./RoomScene";
-import { ShelvesPanel, CoolersPanel, GeneratorsPanel, AchievementsPanel, CosmeticsPanel } from "./NewPanels";
+import { ShelvesPanel, CoolersPanel, GeneratorsPanel, AchievementsPanel, CosmeticsPanel, COSMETIC_CATALOG } from "./NewPanels";
+import { InventoryDock } from "./InventoryDock";
 
 const fmtBtc = (n: number) => {
   if (n >= 1000) return n.toFixed(2);
@@ -45,6 +46,8 @@ interface SaveState {
   achievementsClaimed: Record<string, boolean>;
   cosmeticsUnlocked: Record<string, boolean>;
   tokens: number;
+  shelfTypes?: ShelfType[];
+  cosmeticsEquipped?: CosmeticsEquipped;
 }
 
 function loadSave(): Partial<SaveState> | null {
@@ -82,6 +85,9 @@ export function Coinminers() {
   const [achievementsClaimed, setAchievementsClaimed] = useState<Record<string, boolean>>({});
   const [cosmeticsUnlocked, setCosmeticsUnlocked] = useState<Record<string, boolean>>({});
   const [tokens, setTokens] = useState<number>(0);
+  const [shelfTypes, setShelfTypes] = useState<ShelfType[]>(["standard", "standard"]);
+  const [cosmeticsEquipped, setCosmeticsEquipped] = useState<CosmeticsEquipped>({});
+  const [carry, setCarry] = useState<Carry | null>(null);
   const [shake, setShake] = useState(false);
   const [pulseTick, setPulseTick] = useState(0);
   const [tickFloats, setTickFloats] = useState<Array<{ id: number; v: number }>>([]);
@@ -93,13 +99,16 @@ export function Coinminers() {
   const maxShelves = Math.floor(currentFacility.capacity / 4);
   const shelfCapacity = Math.min(shelves * 4, currentFacility.capacity);
   const shelfCost = 0.02 * Math.pow(1.55, shelves - 2);
+  const asicShelfCost = ASIC_SHELF_BASE_COST * Math.pow(1.65, shelves - 2);
   const facilityMult = currentFacility.mult ?? 1;
   const prestigeMult = 1 + prestige * 0.25;
 
-  function buyShelf() {
-    if (btc < shelfCost || shelves >= maxShelves) return;
-    setBtc(b => b - shelfCost);
+  function buyShelf(type: ShelfType = "standard") {
+    const cost = type === "asic" ? asicShelfCost : shelfCost;
+    if (btc < cost || shelves >= maxShelves) return;
+    setBtc(b => b - cost);
     setShelves(s => s + 1);
+    setShelfTypes(t => [...t, type]);
     triggerShake();
   }
   function buyResearch(id: string, cost: number, max: number) {
@@ -142,6 +151,7 @@ export function Coinminers() {
     setOwned([{ id: "g1", modelId: "gtx750", equipped: true }]);
     setUpgrades({});
     setShelves(2);
+    setShelfTypes(["standard", "standard"]);
     setResearch({});
     setFacility("garage");
     setTotalEarned(0);
@@ -271,6 +281,12 @@ export function Coinminers() {
       if (saved.achievementsClaimed) setAchievementsClaimed(saved.achievementsClaimed);
       if (saved.cosmeticsUnlocked) setCosmeticsUnlocked(saved.cosmeticsUnlocked);
       if (saved.tokens != null) setTokens(saved.tokens);
+      // Migrations: pad/repair shelfTypes; default cosmeticsEquipped
+      const sCount = saved.shelves ?? 2;
+      const t = (saved.shelfTypes ?? []).slice(0, sCount);
+      while (t.length < sCount) t.push("standard");
+      setShelfTypes(t);
+      setCosmeticsEquipped(saved.cosmeticsEquipped ?? {});
       if (saved.lastPlayed) {
         const dt = Math.min((Date.now() - saved.lastPlayed) / 1000, 8 * 3600);
         if (dt >= 30) {
@@ -298,6 +314,7 @@ export function Coinminers() {
           btc, owned, upgrades, facility, shelves, research, claimed,
           prestige, totalEarned, lastDaily, dailyStreak, lastPlayed: Date.now(),
           coolers, powers, achievementsClaimed, cosmeticsUnlocked, tokens,
+          shelfTypes, cosmeticsEquipped,
         };
         localStorage.setItem(SAVE_KEY, JSON.stringify(data));
       } catch {}
@@ -305,7 +322,7 @@ export function Coinminers() {
     const t = setInterval(save, 4000);
     window.addEventListener("beforeunload", save);
     return () => { clearInterval(t); save(); window.removeEventListener("beforeunload", save); };
-  }, [hydrated, btc, owned, upgrades, facility, shelves, research, claimed, prestige, totalEarned, lastDaily, dailyStreak, coolers, powers, achievementsClaimed, cosmeticsUnlocked, tokens]);
+  }, [hydrated, btc, owned, upgrades, facility, shelves, research, claimed, prestige, totalEarned, lastDaily, dailyStreak, coolers, powers, achievementsClaimed, cosmeticsUnlocked, tokens, shelfTypes, cosmeticsEquipped]);
 
   // Market ticker fluctuation
   useEffect(() => {
@@ -375,16 +392,6 @@ export function Coinminers() {
     setBtc(b => b - m.basePrice);
     setCoolers(c => [...c, { id: `c${Date.now()}-${Math.random()}`, modelId, shelf: null }]);
   }
-  function assignCooler(coolerId: string, shelf: number) {
-    setCoolers(cs => {
-      // unassign anything else on this shelf
-      const cleared = cs.map(c => c.shelf === shelf ? { ...c, shelf: null } : c);
-      return cleared.map(c => c.id === coolerId ? { ...c, shelf } : c);
-    });
-  }
-  function unassignCooler(coolerId: string) {
-    setCoolers(cs => cs.map(c => c.id === coolerId ? { ...c, shelf: null } : c));
-  }
   function sellCooler(coolerId: string) {
     const c = coolers.find(x => x.id === coolerId);
     if (!c) return;
@@ -399,15 +406,6 @@ export function Coinminers() {
     setBtc(b => b - m.basePrice);
     setPowers(p => [...p, { id: `p${Date.now()}-${Math.random()}`, modelId, shelf: null }]);
   }
-  function assignPower(pid: string, shelf: number) {
-    setPowers(ps => {
-      const cleared = ps.map(p => p.shelf === shelf ? { ...p, shelf: null } : p);
-      return cleared.map(p => p.id === pid ? { ...p, shelf } : p);
-    });
-  }
-  function unassignPower(pid: string) {
-    setPowers(ps => ps.map(p => p.id === pid ? { ...p, shelf: null } : p));
-  }
   function sellPower(pid: string) {
     const p = powers.find(x => x.id === pid);
     if (!p) return;
@@ -415,6 +413,86 @@ export function Coinminers() {
     if (m) setBtc(b => b + m.basePrice * 0.6);
     setPowers(ps => ps.filter(x => x.id !== pid));
   }
+
+  // Cosmetics buy + equip
+  function buyCosmetic(id: string) {
+    const c = COSMETIC_CATALOG.find(x => x.id === id);
+    if (!c) return;
+    if (cosmeticsUnlocked[id]) return;
+    if (tokens < c.cost) return;
+    setTokens(t => t - c.cost);
+    setCosmeticsUnlocked(u => ({ ...u, [id]: true }));
+  }
+  function equipCosmetic(cat: keyof CosmeticsEquipped, id: string) {
+    setCosmeticsEquipped(e => ({ ...e, [cat]: id }));
+  }
+  function unequipCosmetic(cat: keyof CosmeticsEquipped) {
+    setCosmeticsEquipped(e => { const n = { ...e }; delete n[cat]; return n; });
+  }
+
+  // ─── Carry / shelf-slot click handlers ─────────────────────────
+  function handleSlotClick(shelfIdx: number, slotIdx: number) {
+    // Get GPU at this slot, if any
+    const equipped = owned.filter(g => g.equipped);
+    const flatIdx = shelfIdx * 4 + slotIdx;
+    const existing = equipped[flatIdx];
+    const sType: ShelfType = shelfTypes[shelfIdx] ?? "standard";
+
+    if (carry?.kind === "gpu") {
+      const g = owned.find(x => x.id === carry.id);
+      if (!g || g.equipped) { setCarry(null); return; }
+      const m = GPU_MODELS.find(x => x.id === g.modelId);
+      if (!m) { setCarry(null); return; }
+      const isAsicGpu = ASIC_GPU_IDS.has(m.id);
+      // Shelf-type compatibility
+      if (sType === "asic" && !isAsicGpu) return; // asic shelves only accept asic
+      if (sType === "standard" && isAsicGpu) return; // asic GPUs need asic shelf
+      // Capacity check
+      if (equipped.length >= shelfCapacity) return;
+      setOwned(o => o.map(x => x.id === g.id ? { ...x, equipped: true } : x));
+      setCarry(null);
+      return;
+    }
+    // No carry → click occupied slot to remove (back to inventory)
+    if (!carry && existing) {
+      setOwned(o => o.map(x => x.id === existing.id ? { ...x, equipped: false } : x));
+    }
+  }
+  function handleCoolerSlotClick(shelfIdx: number) {
+    if (carry?.kind === "cooler") {
+      const cid = carry.id;
+      setCoolers(cs => {
+        const cleared = cs.map(c => c.shelf === shelfIdx ? { ...c, shelf: null } : c);
+        return cleared.map(c => c.id === cid ? { ...c, shelf: shelfIdx } : c);
+      });
+      setCarry(null);
+      return;
+    }
+    if (!carry) {
+      setCoolers(cs => cs.map(c => c.shelf === shelfIdx ? { ...c, shelf: null } : c));
+    }
+  }
+  function handlePowerSlotClick(shelfIdx: number) {
+    if (carry?.kind === "power") {
+      const pid = carry.id;
+      setPowers(ps => {
+        const cleared = ps.map(p => p.shelf === shelfIdx ? { ...p, shelf: null } : p);
+        return cleared.map(p => p.id === pid ? { ...p, shelf: shelfIdx } : p);
+      });
+      setCarry(null);
+      return;
+    }
+    if (!carry) {
+      setPowers(ps => ps.map(p => p.shelf === shelfIdx ? { ...p, shelf: null } : p));
+    }
+  }
+
+  // ESC drops carry
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setCarry(null); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   // Achievement progress + claim
   function achievementProgress(id: string): number {
@@ -578,7 +656,17 @@ export function Coinminers() {
 
         {/* Center scene */}
         <main className="flex-1 p-3 min-w-0 relative min-h-[640px] lg:min-h-0 overflow-y-auto cyber-scroll">
-          <RoomScene owned={owned.filter(g => g.equipped)} hashrate={stats.finalHash} heat={stats.finalHeat} shelves={shelves} facility={facility} />
+          <RoomScene
+            owned={owned.filter(g => g.equipped)}
+            hashrate={stats.finalHash} heat={stats.finalHeat}
+            shelves={shelves} facility={facility}
+            shelfTypes={shelfTypes}
+            coolers={coolers} powers={powers}
+            carry={carry}
+            onSlotClick={handleSlotClick}
+            onCoolerSlotClick={handleCoolerSlotClick}
+            onPowerSlotClick={handlePowerSlotClick}
+          />
         </main>
 
         {/* Right shop / panel */}
@@ -595,17 +683,19 @@ export function Coinminers() {
             <ShopPanel btc={btc} onBuy={buyGpu} capacity={shelfCapacity} owned={owned.filter(g=>g.equipped).length} stored={owned.filter(g=>!g.equipped).length} />
           ) : tab === "shelves" ? (
             <ShelvesPanel btc={btc} shelves={shelves} maxShelves={maxShelves} shelfCost={shelfCost}
-              capacity={currentFacility.capacity} onBuyShelf={buyShelf} />
+              capacity={currentFacility.capacity}
+              asicShelfCost={asicShelfCost}
+              onBuyShelf={() => buyShelf("standard")}
+              onBuyAsicShelf={() => buyShelf("asic")} />
           ) : tab === "coolers" ? (
-            <CoolersPanel btc={btc} coolers={coolers} shelves={shelves}
-              onBuy={buyCooler} onAssign={assignCooler} onUnassign={unassignCooler} onSell={sellCooler} />
+            <CoolersPanel btc={btc} onBuy={buyCooler} />
           ) : tab === "generators" ? (
-            <GeneratorsPanel btc={btc} powers={powers} shelves={shelves}
-              onBuy={buyPower} onAssign={assignPower} onUnassign={unassignPower} onSell={sellPower} />
+            <GeneratorsPanel btc={btc} onBuy={buyPower} />
           ) : tab === "achiev" ? (
             <AchievementsPanel claimed={achievementsClaimed} progress={achievementProgress} onClaim={claimAchievement} />
           ) : tab === "cosmetics" ? (
-            <CosmeticsPanel tokens={tokens} unlocked={cosmeticsUnlocked} />
+            <CosmeticsPanel tokens={tokens} unlocked={cosmeticsUnlocked} equipped={cosmeticsEquipped}
+              onBuy={buyCosmetic} onEquip={equipCosmetic} onUnequip={unequipCosmetic} />
           ) : tab === "research" ? (
             <ResearchPanel btc={btc} levels={research} onBuy={buyResearch} />
           ) : tab === "missions" ? (
@@ -619,6 +709,11 @@ export function Coinminers() {
           )}
         </aside>
       </div>
+
+      {/* Inventory dock */}
+      <InventoryDock owned={owned} coolers={coolers} powers={powers}
+        carry={carry} setCarry={setCarry}
+        onSellGpu={sellGpu} onSellCooler={sellCooler} onSellPower={sellPower} />
 
       {/* Bottom HUD */}
       <div className="h-7 border-t border-[color:var(--metal-light)] flex items-center px-3 gap-4 text-[12px] font-mono-pixel overflow-x-auto whitespace-nowrap shrink-0"

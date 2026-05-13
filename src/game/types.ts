@@ -58,6 +58,19 @@ export interface Upgrade {
   icon: string;
 }
 
+export type ShelfType = "standard" | "asic";
+
+export interface CosmeticsEquipped {
+  gpuFrame?: string;
+  gpuLed?: string;
+  shelfTrim?: string;
+  background?: string;
+}
+
+export type CarryKind = "gpu" | "cooler" | "power";
+export interface Carry { kind: CarryKind; id: string; }
+
+
 export interface Facility {
   id: string;
   name: string;

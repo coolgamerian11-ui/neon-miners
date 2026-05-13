@@ -1,79 +1,52 @@
-## Coinminers — Visual Density & Atmosphere Overhaul
+## Goal
+Make hardware management feel tangible: a persistent bottom inventory dock, click-to-place onto shelf slots, sidebar = shop only, cosmetics you actually equip, and dedicated ASIC shelves.
 
-Goal: transform the empty center stage into a busy, layered, animated mining facility, sharpen reward feedback, and make progression visible. Pure frontend/presentation work — no game-balance changes.
+## 1. Inventory dock (bottom of screen)
+New component `InventoryDock.tsx` — three tabs **GPUs / Coolers / Generators** showing only unassigned items.
+- Click an item → it becomes the active "carry" (cursor highlight, glow).
+- Click a compatible empty shelf slot in `RoomScene` → assigned and removed from dock.
+- ESC or click again to drop carry.
+- Shows item icon (pixel sprite), name, key stat, count.
 
-### 1. Rebuild the center stage (`RoomScene.tsx`)
-Replace the current single-shelf column with a 3-layer parallax scene that fills the whole panel.
+Replaces ~80 px at bottom; existing bottom HUD slim bar stays below or merges.
 
-- **Background layer**: pixel city skyline at night, rain streaks, distant blinking antenna lights, server-wall silhouette, large window frame with neon glow bleed.
-- **Midground layer**: vertical rack of tall shelves (current system, kept), plus a second wall of server blades, cooling pipes running along the ceiling, a desk with monitor showing a live hashrate sparkline.
-- **Foreground layer**: hanging cables swaying (CSS keyframes), drifting dust motes in a light shaft, occasional spark burst near a rig, steam puff from a vent.
-- All three layers absolute-positioned inside a `relative` container that grows to fill `main` (no fixed 560px — use `flex-1 min-h-[640px]`).
+## 2. Shelf slots become real drop targets
+In `MiningRack.tsx`:
+- Each shelf renders 4 GPU slots (existing) + 1 cooler slot + 1 generator slot, visually distinct (snowflake/lightning frames).
+- Slots are buttons; if `carry` matches type, slot lights up green; click assigns. Empty assigned slot click = unassign back to dock.
 
-### 2. Constant environmental animation
-Add a small `Ambience` component layered on top of the scene with:
+State `carry: { kind: "gpu"|"cooler"|"power", id: string } | null` lives in `Coinminers.tsx` and is passed down.
 
-- Floating ₿ particles rising from active shelves (one every ~1.2s, fades at top).
-- Heat shimmer (`backdrop-filter` wavy mask) over high-heat shelves.
-- Flickering ceiling LED strip (opacity keyframes, randomized).
-- Oscillating wall fan in a corner (separate from GPU fans).
-- Scanline sweep across the whole scene every 6s.
+## 3. Sidebar Coolers/Generators panels → shop only
+Strip the "shelf slots" + "inventory" sections from `CoolersPanel` / `GeneratorsPanel`. Keep only the BUY list. Inventory + assignment are handled by the new dock + shelf slots.
 
-### 3. Visible progression tied to state
-Scene reacts to `owned.length`, `shelves`, `totalUpgrades`, `facility`:
+## 4. Cooler & Generator textures
+Add `PixelCooler.tsx` and `PixelGenerator.tsx` — small pixel-art sprites tinted by tier color. Used in dock, shop, and on the shelf slot when occupied.
 
-- Shelves physically appear as bought (already true) — also light up their LED strip color brighter as they fill.
-- Cable bundle thickens as more GPUs are owned (SVG path width = f(owned)).
-- Background server wall reveals more lit blades as hashrate crosses thresholds.
-- Facility tier swaps the wall texture / palette (garage planks → concrete → steel → vault red → datacenter cyan → quantum holo → space stars).
+## 5. Cosmetics: equipping
+Extend save: `cosmeticsEquipped: { gpuFrame?: id, gpuLed?: id, shelfTrim?: id, background?: id }`.
+- `CosmeticsPanel`: each unlocked item shows EQUIP / EQUIPPED / UNEQUIP buttons per category (one equipped per category).
+- Also allow direct purchase with tokens for items not gated to achievements.
+- `PixelGpu` / `MiningRack` / `RoomScene` read equipped cosmetics and tweak frame color, LED color, shelf trim, background overlay.
 
-### 4. Beefier GPU art (`PixelGpu.tsx`)
-- Larger default render (current size kept for shelves via `scale`, but Shop/Inventory cards use 2× size).
-- Rarity frame: animated border whose color & glow intensity come from `rarity` (Common gray → Mythic cyan with rotating conic gradient).
-- Manufacturer tag (3-letter pixel logo per tier).
-- Heat bar on the card edge (red fill = current heat).
-- Tiny spark sprite that pops every few seconds on Epic+.
-- Keep RGB strip + center-pivot fans (already fixed).
+## 6. ASIC shelves
+Add `shelfTypes: ("standard"|"asic")[]` to save (length = shelves count; default all `"standard"`).
+- `ShelvesPanel` adds two buttons: "Buy Standard Shelf" and "Buy ASIC Shelf" (more expensive, accepts only `tier === "quantum"` or new `"asic"` GPU tier — we'll treat existing `"quantum"` as ASIC-class).
+- ASIC shelves rendered with a heavy industrial frame (orange/gold trim).
+- When placing a GPU via dock: standard shelves reject ASIC GPUs; ASIC shelves only accept ASIC GPUs.
+- New ASIC GPU model added to `GPU_MODELS` (e.g., "AntMiner X9", tier `"quantum"`) so the system has clear ASIC content.
 
-### 5. Stronger mining feedback
-- **Floating numbers**: when a mining tick fires, spawn a `+0.000123 ₿` text that floats up & fades near the BTC HUD.
-- **Pulse**: BTC balance number scales 1→1.08→1 on each tick.
-- **Hashrate surge**: when an upgrade is bought, brief screen-shake (CSS class toggled for 250ms) + radial flash.
-- **Server pulse**: every shelf row emits a soft glow pulse synced to the tick interval.
-- **Progress bars**: a small "next block" bar in the HUD fills continuously.
+## 7. Save migration
+Keep `SAVE_KEY = "coinminers.save.v3"` so existing players load. In `loadSave` / hydrate effect:
+- Default `cosmeticsEquipped = {}`.
+- Default `shelfTypes = Array(saved.shelves ?? 2).fill("standard")`.
+- If saved JSON has length mismatch on `shelfTypes`, pad with `"standard"`.
 
-### 6. Typography hierarchy (`styles.css` + HUD)
-- Press Start 2P kept for headers; bump section titles to 14–16px.
-- BTC balance: 22px, neon-orange, glow.
-- Hashrate / profit: 14px secondary.
-- Lesser stats: 10px muted.
-- Add `.stat-primary`, `.stat-secondary`, `.stat-muted` utility classes.
+No data loss — purely additive fields.
 
-### 7. Rarity color system
-Centralize in `data.ts` (or a new `rarity.ts`): mapping rarity → border color, glow color, animation name. Used by GPU cards, inventory tiles, and shop list. Mythic gets a rotating conic-gradient border (`@keyframes spin-border`).
+## Files
+**New:** `src/game/InventoryDock.tsx`, `src/game/PixelCooler.tsx`, `src/game/PixelGenerator.tsx`
+**Edited:** `src/game/Coinminers.tsx` (carry state, dock render, shelfTypes, cosmeticsEquipped, save migration), `src/game/NewPanels.tsx` (slim coolers/generators to shop-only; cosmetics equip), `src/game/MiningRack.tsx` (slot drop targets, asic visual, equipped trim), `src/game/RoomScene.tsx` (pass carry + cosmetics + shelfTypes), `src/game/PixelGpu.tsx` (equipped frame/led colors), `src/game/types.ts` (ShelfType, CosmeticsEquipped), `src/game/data.ts` (one ASIC GPU model, ASIC shelf cost constant).
 
-### 8. Room clutter
-Add a `Clutter` SVG layer with hand-placed pixel props: empty soda cans, toolbox, thermal-paste tube, sticky notes, screwdriver, USB stick, dust piles, "DANGER HIGH VOLTAGE" sign. Static — purely decorative density.
-
-### 9. UI motion
-- Number rolling: small `useRollingNumber` hook (lerps display value toward target).
-- Hover glow on all sidebar tabs and shop rows (existing classes extended).
-- Pulsing "BUY" buttons when affordable (subtle scale + glow).
-- Scanline sweep on active panel header.
-
-### 10. Prestige visual hook (scaffold only)
-Add a `prestigeTier` prop threaded into `RoomScene` (defaults to 0 since prestige logic isn't wired yet). Scene already swaps palette by `facility`; prestige tier multiplies glow intensity and unlocks extra background props (holo miners, orbital window). No new game logic — just a visual variable ready to bind later.
-
-### Out of scope (for this pass)
-- Sound-reactive visuals (no audio system yet).
-- Real prestige mechanics.
-- Animated workers/drones beyond a single looping sprite (can add later if you want).
-
-### Files touched
-- `src/game/RoomScene.tsx` — major rewrite into layered scene.
-- `src/game/PixelGpu.tsx` — rarity frame, heat bar, sparks, manufacturer tag.
-- `src/game/Coinminers.tsx` — floating BTC numbers, rolling numbers, screen-shake hook, HUD typography classes, larger GPU renders in shop/inventory.
-- `src/game/data.ts` — rarity → style map, manufacturer tags.
-- `src/game/Ambience.tsx` (new) — particles, shimmer, scanlines, dust.
-- `src/game/Clutter.tsx` (new) — decorative pixel props.
-- `src/styles.css` — new keyframes (spark, float-up, shake, spin-border, flicker, scanline), stat utility classes, pixel-rain background.
+## Out of scope this round
+Drag-and-drop with mouse motion (we use click-to-carry — simpler and touch-friendly). Network/cloud sync. New cosmetics art beyond color tinting.

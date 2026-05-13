@@ -1,5 +1,7 @@
 import { COOLER_MODELS, POWER_MODELS, ACHIEVEMENTS } from "./data";
-import type { OwnedCooler, OwnedPower } from "./types";
+import type { CosmeticsEquipped } from "./types";
+import { PixelCooler } from "./PixelCooler";
+import { PixelGenerator } from "./PixelGenerator";
 
 const fmtBtc = (n: number) => {
   if (n >= 1000) return n.toFixed(2);
@@ -16,15 +18,18 @@ const TIER_COLOR: Record<string, string> = {
 };
 
 /* ---------- SHELVES ---------- */
-export function ShelvesPanel({ btc, shelves, maxShelves, shelfCost, capacity, onBuyShelf }:
-  { btc: number; shelves: number; maxShelves: number; shelfCost: number; capacity: number; onBuyShelf: () => void }) {
+export function ShelvesPanel({ btc, shelves, maxShelves, shelfCost, capacity, onBuyShelf,
+  asicShelfCost, onBuyAsicShelf }:
+  { btc: number; shelves: number; maxShelves: number; shelfCost: number; capacity: number;
+    onBuyShelf: () => void; asicShelfCost: number; onBuyAsicShelf: () => void }) {
   const can = btc >= shelfCost && shelves < maxShelves;
+  const canAsic = btc >= asicShelfCost && shelves < maxShelves;
   const atMax = shelves >= maxShelves;
   return (
     <div className="p-3 space-y-3">
       <h2 className="font-pixel text-[11px] text-neon-cyan">▥ SHELVES</h2>
       <div className="font-mono-pixel text-[14px] text-muted-foreground">
-        Each shelf adds 4 GPU slots, plus a slot for one cooler and one power supply.
+        Each shelf has 4 GPU slots, a ❄ cooler slot and a ⚡ generator slot. ASIC shelves only mount ASIC-class miners.
       </div>
       <div className="metal-panel p-3 neon-frame">
         <div className="flex items-center justify-between mb-1">
@@ -36,9 +41,9 @@ export function ShelvesPanel({ btc, shelves, maxShelves, shelfCost, capacity, on
         </div>
       </div>
       <div className="metal-panel p-3">
-        <div className="font-pixel text-[10px] text-neon-cyan mb-1">+ NEW SHELF</div>
+        <div className="font-pixel text-[10px] text-neon-cyan mb-1">+ STANDARD SHELF</div>
         <div className="font-mono-pixel text-[12px] text-muted-foreground mb-3">
-          Adds 4 GPU slots, 1 cooler slot, 1 power slot.
+          Holds GTX/RTX/RX-class GPUs. 4 GPU + 1 cooler + 1 generator slot.
         </div>
         <div className="flex items-center justify-between">
           <span className="font-pixel text-[12px] btc-text">₿ {fmtBtc(shelfCost)}</span>
@@ -48,84 +53,39 @@ export function ShelvesPanel({ btc, shelves, maxShelves, shelfCost, capacity, on
           </button>
         </div>
       </div>
+      <div className="metal-panel p-3" style={{ borderColor: "#caa018", boxShadow: "0 0 10px rgba(202,160,24,0.4)" }}>
+        <div className="font-pixel text-[10px] mb-1" style={{ color: "#caa018", textShadow: "0 0 4px #caa018" }}>+ ASIC SHELF</div>
+        <div className="font-mono-pixel text-[12px] text-muted-foreground mb-3">
+          Reinforced industrial mount for ASIC / FPGA / Quantum miners only. Heavier frame, gold trim.
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="font-pixel text-[12px] btc-text">₿ {fmtBtc(asicShelfCost)}</span>
+          <button onClick={onBuyAsicShelf} disabled={!canAsic}
+            className="btn-buy px-4 py-2 font-pixel text-[10px]">
+            {atMax ? "MAX" : "BUY ASIC ▶"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
 
-/* ---------- COOLERS ---------- */
-export function CoolersPanel({ btc, coolers, shelves, onBuy, onAssign, onUnassign, onSell }:
-  { btc: number; coolers: OwnedCooler[]; shelves: number;
-    onBuy: (id: string) => void; onAssign: (cid: string, shelf: number) => void;
-    onUnassign: (cid: string) => void; onSell: (cid: string) => void }) {
+/* ---------- COOLERS (shop only) ---------- */
+export function CoolersPanel({ btc, onBuy }:
+  { btc: number; onBuy: (id: string) => void }) {
   return (
     <div className="p-3 space-y-3">
       <h2 className="font-pixel text-[11px] text-neon-cyan">❄ COOLERS</h2>
       <div className="font-mono-pixel text-[13px] text-muted-foreground">
-        One cooler per shelf. Higher tier = more heat removed = more hashrate.
+        Buy coolers here — then drag from the bottom inventory dock onto a shelf's ❄ slot.
       </div>
-
-      {/* Shelf assignments */}
-      <div className="metal-panel p-2 space-y-1">
-        <div className="font-pixel text-[10px] text-neon-orange mb-1">SHELF SLOTS</div>
-        {Array.from({ length: shelves }).map((_, s) => {
-          const c = coolers.find(x => x.shelf === s);
-          const m = c ? COOLER_MODELS.find(x => x.id === c.modelId) : null;
-          return (
-            <div key={s} className="flex items-center justify-between gap-2 px-2 py-1 border border-[color:var(--metal-dark)]"
-              style={{ background: "rgba(0,0,0,0.4)" }}>
-              <span className="font-pixel text-[9px] text-neon-cyan">SHELF {String(s+1).padStart(2,"0")}</span>
-              {m ? (
-                <>
-                  <span className="font-mono-pixel text-[12px]" style={{ color: TIER_COLOR[m.tier] }}>{m.name} · −{m.cooling}°</span>
-                  <button onClick={() => onUnassign(c!.id)} className="btn-cyber px-2 py-0.5 font-pixel text-[8px] text-neon-red">REMOVE</button>
-                </>
-              ) : (
-                <span className="font-pixel text-[9px] text-muted-foreground">— EMPTY —</span>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Inventory */}
-      <div className="metal-panel p-2">
-        <div className="font-pixel text-[10px] text-neon-purple mb-1">INVENTORY ({coolers.filter(c=>c.shelf==null).length})</div>
-        {coolers.filter(c => c.shelf == null).length === 0 ? (
-          <div className="text-center py-2 font-pixel text-[8px] text-muted-foreground">— EMPTY — buy below</div>
-        ) : (
-          <div className="grid grid-cols-1 gap-1">
-            {coolers.filter(c => c.shelf == null).map(c => {
-              const m = COOLER_MODELS.find(x => x.id === c.modelId)!;
-              return (
-                <div key={c.id} className="flex items-center gap-1 p-1 border border-[color:var(--metal-dark)]"
-                  style={{ background: "rgba(0,0,0,0.4)" }}>
-                  <span className="font-pixel text-[9px] flex-1" style={{ color: TIER_COLOR[m.tier] }}>{m.name}</span>
-                  <span className="font-mono-pixel text-[11px] text-neon-cyan">−{m.cooling}°</span>
-                  <select onChange={(e) => { if (e.target.value) onAssign(c.id, +e.target.value); }}
-                    defaultValue=""
-                    className="font-mono-pixel text-[11px] bg-black/60 border border-[color:var(--metal-dark)] px-1 py-0.5">
-                    <option value="">→ shelf…</option>
-                    {Array.from({ length: shelves }).map((_, s) => (
-                      <option key={s} value={s}>S{s+1}</option>
-                    ))}
-                  </select>
-                  <button onClick={() => onSell(c.id)} className="btn-cyber px-1.5 py-0.5 font-pixel text-[8px] text-neon-red">SELL</button>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* Shop */}
       <div className="space-y-2">
         <div className="font-pixel text-[10px] text-neon-orange">▶ SHOP</div>
         {COOLER_MODELS.map(m => {
           const can = btc >= m.basePrice;
           return (
             <div key={m.id} className="metal-panel p-2 flex items-center gap-2">
-              <div className="w-6 h-6 flex items-center justify-center font-pixel text-[10px]"
-                style={{ background: TIER_COLOR[m.tier], color: "#000" }}>❄</div>
+              <PixelCooler model={m} size={36} />
               <div className="flex-1 min-w-0">
                 <div className="font-pixel text-[10px]" style={{ color: TIER_COLOR[m.tier] }}>{m.name}</div>
                 <div className="font-mono-pixel text-[12px] text-muted-foreground">−{m.cooling}° heat · {m.tier}</div>
@@ -141,65 +101,14 @@ export function CoolersPanel({ btc, coolers, shelves, onBuy, onAssign, onUnassig
   );
 }
 
-/* ---------- GENERATORS ---------- */
-export function GeneratorsPanel({ btc, powers, shelves, onBuy, onAssign, onUnassign, onSell }:
-  { btc: number; powers: OwnedPower[]; shelves: number;
-    onBuy: (id: string) => void; onAssign: (pid: string, shelf: number) => void;
-    onUnassign: (pid: string) => void; onSell: (pid: string) => void }) {
+/* ---------- GENERATORS (shop only) ---------- */
+export function GeneratorsPanel({ btc, onBuy }:
+  { btc: number; onBuy: (id: string) => void }) {
   return (
     <div className="p-3 space-y-3">
       <h2 className="font-pixel text-[11px] text-neon-orange">⚡ GENERATORS</h2>
       <div className="font-mono-pixel text-[13px] text-muted-foreground">
-        One PSU per shelf. If supplied power &lt; demand, hashrate drops fast.
-      </div>
-      <div className="metal-panel p-2 space-y-1">
-        <div className="font-pixel text-[10px] text-neon-orange mb-1">SHELF SLOTS</div>
-        {Array.from({ length: shelves }).map((_, s) => {
-          const p = powers.find(x => x.shelf === s);
-          const m = p ? POWER_MODELS.find(x => x.id === p.modelId) : null;
-          return (
-            <div key={s} className="flex items-center justify-between gap-2 px-2 py-1 border border-[color:var(--metal-dark)]"
-              style={{ background: "rgba(0,0,0,0.4)" }}>
-              <span className="font-pixel text-[9px] text-neon-cyan">SHELF {String(s+1).padStart(2,"0")}</span>
-              {m ? (
-                <>
-                  <span className="font-mono-pixel text-[12px]" style={{ color: TIER_COLOR[m.tier] }}>{m.name} · {m.capacity}kW</span>
-                  <button onClick={() => onUnassign(p!.id)} className="btn-cyber px-2 py-0.5 font-pixel text-[8px] text-neon-red">REMOVE</button>
-                </>
-              ) : (
-                <span className="font-pixel text-[9px] text-neon-red">— NO POWER —</span>
-              )}
-            </div>
-          );
-        })}
-      </div>
-      <div className="metal-panel p-2">
-        <div className="font-pixel text-[10px] text-neon-purple mb-1">INVENTORY ({powers.filter(p=>p.shelf==null).length})</div>
-        {powers.filter(p => p.shelf == null).length === 0 ? (
-          <div className="text-center py-2 font-pixel text-[8px] text-muted-foreground">— EMPTY — buy below</div>
-        ) : (
-          <div className="grid grid-cols-1 gap-1">
-            {powers.filter(p => p.shelf == null).map(p => {
-              const m = POWER_MODELS.find(x => x.id === p.modelId)!;
-              return (
-                <div key={p.id} className="flex items-center gap-1 p-1 border border-[color:var(--metal-dark)]"
-                  style={{ background: "rgba(0,0,0,0.4)" }}>
-                  <span className="font-pixel text-[9px] flex-1" style={{ color: TIER_COLOR[m.tier] }}>{m.name}</span>
-                  <span className="font-mono-pixel text-[11px] text-neon-orange">{m.capacity}kW</span>
-                  <select onChange={(e) => { if (e.target.value) onAssign(p.id, +e.target.value); }}
-                    defaultValue=""
-                    className="font-mono-pixel text-[11px] bg-black/60 border border-[color:var(--metal-dark)] px-1 py-0.5">
-                    <option value="">→ shelf…</option>
-                    {Array.from({ length: shelves }).map((_, s) => (
-                      <option key={s} value={s}>S{s+1}</option>
-                    ))}
-                  </select>
-                  <button onClick={() => onSell(p.id)} className="btn-cyber px-1.5 py-0.5 font-pixel text-[8px] text-neon-red">SELL</button>
-                </div>
-              );
-            })}
-          </div>
-        )}
+        Buy generators here — drag from the bottom inventory dock onto a shelf's ⚡ slot.
       </div>
       <div className="space-y-2">
         <div className="font-pixel text-[10px] text-neon-orange">▶ SHOP</div>
@@ -207,8 +116,7 @@ export function GeneratorsPanel({ btc, powers, shelves, onBuy, onAssign, onUnass
           const can = btc >= m.basePrice;
           return (
             <div key={m.id} className="metal-panel p-2 flex items-center gap-2">
-              <div className="w-6 h-6 flex items-center justify-center font-pixel text-[10px]"
-                style={{ background: TIER_COLOR[m.tier], color: "#000" }}>⚡</div>
+              <PixelGenerator model={m} size={36} />
               <div className="flex-1 min-w-0">
                 <div className="font-pixel text-[10px]" style={{ color: TIER_COLOR[m.tier] }}>{m.name}</div>
                 <div className="font-mono-pixel text-[12px] text-muted-foreground">{m.capacity}kW · {m.tier}</div>
@@ -276,25 +184,29 @@ export function AchievementsPanel({ claimed, progress, onClaim }:
 }
 
 /* ---------- COSMETICS ---------- */
-const COSMETIC_CATALOG = [
-  { id: "skin-frame-bronze",  name: "Bronze Frame",      cat: "GPU Skin",   cost: 2 },
-  { id: "skin-frame-silver",  name: "Silver Frame",      cat: "GPU Skin",   cost: 4 },
-  { id: "skin-frame-gold",    name: "Gold Frame",        cat: "GPU Skin",   cost: 8 },
-  { id: "skin-frame-neon",    name: "Neon Frame",        cat: "GPU Skin",   cost: 12 },
-  { id: "skin-led-cyan",      name: "Cyan LEDs",         cat: "GPU LED",    cost: 3 },
-  { id: "skin-led-purple",    name: "Purple LEDs",       cat: "GPU LED",    cost: 6 },
-  { id: "skin-led-rainbow",   name: "Rainbow LEDs",      cat: "GPU LED",    cost: 15 },
-  { id: "shelf-neon-blue",    name: "Blue Shelf Trim",   cat: "Shelf",      cost: 4 },
-  { id: "shelf-neon-purple",  name: "Purple Shelf Trim", cat: "Shelf",      cost: 8 },
-  { id: "bg-rain",            name: "Rainstorm BG",      cat: "Background", cost: 5 },
-  { id: "bg-storm",           name: "Cyber Storm BG",    cat: "Background", cost: 10 },
-  { id: "bg-aurora",          name: "Aurora BG",         cat: "Background", cost: 12 },
-  { id: "bg-galaxy",          name: "Galaxy BG",         cat: "Background", cost: 20 },
-  { id: "bg-vault",           name: "Vault BG",          cat: "Background", cost: 25 },
+type CosmeticCat = "gpuFrame" | "gpuLed" | "shelfTrim" | "background";
+export const COSMETIC_CATALOG: { id: string; name: string; cat: CosmeticCat; catLabel: string; cost: number; color: string }[] = [
+  { id: "skin-frame-bronze",  name: "Bronze Frame",      cat: "gpuFrame",   catLabel: "GPU Frame", cost: 2,  color: "#b07a30" },
+  { id: "skin-frame-silver",  name: "Silver Frame",      cat: "gpuFrame",   catLabel: "GPU Frame", cost: 4,  color: "#c0c4cc" },
+  { id: "skin-frame-gold",    name: "Gold Frame",        cat: "gpuFrame",   catLabel: "GPU Frame", cost: 8,  color: "#e8c040" },
+  { id: "skin-frame-neon",    name: "Neon Frame",        cat: "gpuFrame",   catLabel: "GPU Frame", cost: 12, color: "var(--neon-cyan)" },
+  { id: "skin-led-cyan",      name: "Cyan LEDs",         cat: "gpuLed",     catLabel: "GPU LED",   cost: 3,  color: "var(--neon-cyan)" },
+  { id: "skin-led-purple",    name: "Purple LEDs",       cat: "gpuLed",     catLabel: "GPU LED",   cost: 6,  color: "var(--neon-purple)" },
+  { id: "skin-led-rainbow",   name: "Rainbow LEDs",      cat: "gpuLed",     catLabel: "GPU LED",   cost: 15, color: "var(--neon-green)" },
+  { id: "shelf-neon-blue",    name: "Blue Shelf Trim",   cat: "shelfTrim",  catLabel: "Shelf",     cost: 4,  color: "var(--neon-blue)" },
+  { id: "shelf-neon-purple",  name: "Purple Shelf Trim", cat: "shelfTrim",  catLabel: "Shelf",     cost: 8,  color: "var(--neon-purple)" },
+  { id: "bg-rain",            name: "Rainstorm BG",      cat: "background", catLabel: "Background",cost: 5,  color: "#3060a0" },
+  { id: "bg-storm",           name: "Cyber Storm BG",    cat: "background", catLabel: "Background",cost: 10, color: "var(--neon-purple)" },
+  { id: "bg-aurora",          name: "Aurora BG",         cat: "background", catLabel: "Background",cost: 12, color: "var(--neon-green)" },
+  { id: "bg-galaxy",          name: "Galaxy BG",         cat: "background", catLabel: "Background",cost: 20, color: "var(--neon-purple)" },
+  { id: "bg-vault",           name: "Vault BG",          cat: "background", catLabel: "Background",cost: 25, color: "var(--neon-orange)" },
 ];
 
-export function CosmeticsPanel({ tokens, unlocked }:
-  { tokens: number; unlocked: Record<string, boolean> }) {
+export function CosmeticsPanel({ tokens, unlocked, equipped, onBuy, onEquip, onUnequip }:
+  { tokens: number; unlocked: Record<string, boolean>; equipped: CosmeticsEquipped;
+    onBuy: (id: string) => void;
+    onEquip: (cat: keyof CosmeticsEquipped, id: string) => void;
+    onUnequip: (cat: keyof CosmeticsEquipped) => void; }) {
   return (
     <div className="p-3 space-y-2">
       <div className="flex items-center justify-between">
@@ -302,29 +214,37 @@ export function CosmeticsPanel({ tokens, unlocked }:
         <span className="font-pixel text-[11px] text-neon-orange">◆ {tokens}</span>
       </div>
       <div className="font-mono-pixel text-[13px] text-muted-foreground">
-        Earn ◆ tokens from achievements. Cosmetic-only — no stat boost.
+        Earn ◆ from achievements or buy here. Equip one per category.
       </div>
       {COSMETIC_CATALOG.map(c => {
-        const owned = unlocked[c.id];
+        const owned = !!unlocked[c.id];
+        const isEquipped = equipped[c.cat] === c.id;
+        const canBuy = !owned && tokens >= c.cost;
         return (
-          <div key={c.id} className={`metal-panel p-2 flex items-center gap-2 ${owned ? "neon-frame" : ""}`}>
-            <div className="w-6 h-6 flex items-center justify-center font-pixel text-[10px]"
-              style={{ background: owned ? "var(--neon-green)" : "var(--metal-mid)", color: "#000" }}>◆</div>
+          <div key={c.id} className={`metal-panel p-2 flex items-center gap-2 ${isEquipped ? "neon-frame" : ""}`}>
+            <div className="w-7 h-7 flex items-center justify-center font-pixel text-[10px]"
+              style={{ background: c.color, color: "#000", border: "1px solid #000" }}>◆</div>
             <div className="flex-1 min-w-0">
-              <div className="font-pixel text-[10px] text-neon-cyan">{c.name}</div>
-              <div className="font-mono-pixel text-[11px] text-muted-foreground">{c.cat}</div>
+              <div className="font-pixel text-[10px] text-neon-cyan truncate">{c.name}</div>
+              <div className="font-mono-pixel text-[11px] text-muted-foreground">{c.catLabel}</div>
             </div>
-            {owned ? (
-              <span className="font-pixel text-[9px] text-neon-green">✓ UNLOCKED</span>
+            {!owned ? (
+              <button onClick={() => onBuy(c.id)} disabled={!canBuy}
+                className="btn-buy px-2 py-1 font-pixel text-[9px]">
+                ◆ {c.cost}
+              </button>
+            ) : isEquipped ? (
+              <button onClick={() => onUnequip(c.cat)} className="btn-cyber px-2 py-1 font-pixel text-[9px] text-neon-green">
+                ✓ EQUIPPED
+              </button>
             ) : (
-              <span className="font-pixel text-[9px] text-neon-purple">◆ {c.cost}</span>
+              <button onClick={() => onEquip(c.cat, c.id)} className="btn-buy px-2 py-1 font-pixel text-[9px]">
+                EQUIP
+              </button>
             )}
           </div>
         );
       })}
-      <div className="font-mono-pixel text-[11px] text-muted-foreground text-center pt-2">
-        Direct purchase coming soon — for now unlock via achievements.
-      </div>
     </div>
   );
 }

@@ -1,13 +1,21 @@
 import { memo, useMemo } from "react";
-import type { OwnedGpu } from "./types";
+import type { OwnedGpu, OwnedCooler, OwnedPower, Carry, ShelfType } from "./types";
 import { Ambience } from "./Ambience";
 import { Clutter } from "./Clutter";
 import { MiningRack, type RackTier } from "./MiningRack";
 import { FacilityDecor, getFacilityVisuals } from "./FacilityTheme";
 
 /** Garage / facility room with deep environmental detail */
-function RoomSceneInner({ owned, hashrate, heat, shelves = 2, facility = "garage" }:
-  { owned: OwnedGpu[]; hashrate: number; heat: number; shelves?: number; facility?: string }) {
+function RoomSceneInner({ owned, hashrate, heat, shelves = 2, facility = "garage",
+  shelfTypes = [], coolers = [], powers = [], carry = null,
+  onSlotClick, onCoolerSlotClick, onPowerSlotClick }: {
+    owned: OwnedGpu[]; hashrate: number; heat: number; shelves?: number; facility?: string;
+    shelfTypes?: ShelfType[]; coolers?: OwnedCooler[]; powers?: OwnedPower[];
+    carry?: Carry | null;
+    onSlotClick?: (s: number, i: number) => void;
+    onCoolerSlotClick?: (s: number) => void;
+    onPowerSlotClick?: (s: number) => void;
+  }) {
   const perShelf = 4;
   const slots = shelves * perShelf;
   const filled = owned.slice(0, slots);
@@ -179,7 +187,17 @@ function RoomSceneInner({ owned, hashrate, heat, shelves = 2, facility = "garage
           {Array.from({ length: shelves }).map((_, si) => {
             const row = filled.slice(si * perShelf, si * perShelf + perShelf);
             const padded: (OwnedGpu | undefined)[] = Array.from({ length: perShelf }, (_, i) => row[i]);
-            return <MiningRack key={si} index={si} perShelf={perShelf} row={padded} tier={tier} />;
+            const sType: ShelfType = shelfTypes[si] ?? "standard";
+            const cooler = coolers.find(c => c.shelf === si) ?? null;
+            const power = powers.find(p => p.shelf === si) ?? null;
+            return (
+              <MiningRack key={si} index={si} perShelf={perShelf} row={padded}
+                tier={tier} shelfType={sType}
+                cooler={cooler} power={power} carry={carry}
+                onSlotClick={onSlotClick}
+                onCoolerSlotClick={onCoolerSlotClick}
+                onPowerSlotClick={onPowerSlotClick} />
+            );
           })}
         </div>
       </div>
