@@ -162,8 +162,8 @@ export function AchievementsPanel({ claimed, progress, onClaim }:
             <div className="mt-2 h-2 bg-black/60 border border-[color:var(--metal-dark)] overflow-hidden">
               <div className="h-full" style={{
                 width: `${pct}%`,
-                background: done ? "linear-gradient(90deg, var(--neon-green), var(--btc-gold))"
-                                 : "linear-gradient(90deg, var(--neon-purple), var(--neon-cyan))",
+                background: done ? "repeating-linear-gradient(90deg, var(--neon-green) 0 4px, var(--btc-gold) 4px 5px, transparent 5px 7px)"
+                                 : "repeating-linear-gradient(90deg, var(--neon-purple) 0 4px, var(--neon-cyan) 4px 5px, transparent 5px 7px)",
                 boxShadow: done ? "0 0 6px var(--neon-green)" : "none",
               }} />
             </div>

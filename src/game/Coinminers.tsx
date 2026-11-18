@@ -541,14 +541,14 @@ export function Coinminers() {
 
   return (
     <div className={`relative h-screen w-screen overflow-hidden text-foreground flex flex-col ${shake ? "shake" : ""}`}
-      style={{ background: "radial-gradient(ellipse at center top, #1a1828, #0a0a12 70%)" }}>
+      style={{ background: "repeating-conic-gradient(var(--background) 0 25%, var(--metal-dark) 0 50%) 0 0 / 8px 8px" }}>
       {/* Top HUD bar */}
       <header className="relative z-30 flex items-stretch flex-wrap border-b border-[color:var(--metal-light)] shrink-0"
-        style={{ background: "linear-gradient(180deg, #1a1a25, #0c0c14)" }}>
+        style={{ background: "linear-gradient(180deg, #1a1a25 6px, #0c0c14 6px)" }}>
         {/* Logo */}
         <div className="flex items-center gap-2 px-4 border-r border-[color:var(--metal-light)] min-w-[200px]">
           <div className="relative w-8 h-8 flex items-center justify-center rounded-sm"
-            style={{ background: "linear-gradient(135deg, var(--btc-gold), #aa6f1a)", boxShadow: "0 0 14px var(--btc-gold-glow)" }}>
+            style={{ background: "linear-gradient(180deg, var(--btc-gold) 78%, var(--neon-orange) 78%)", boxShadow: "0 0 14px var(--btc-gold-glow)" }}>
             <span className="font-pixel text-black text-sm">₿</span>
           </div>
           <div>
@@ -567,7 +567,7 @@ export function Coinminers() {
               {/* Tick floats */}
               {tickFloats.map(f => (
                 <span key={f.id} className="absolute left-full ml-1 top-0 font-pixel text-[10px] text-neon-green pointer-events-none whitespace-nowrap"
-                  style={{ animation: "float-up 1.4s ease-out forwards" }}>
+                  style={{ animation: "float-up 1.4s steps(8, end) forwards" }}>
                   +₿{f.v.toFixed(6)}
                 </span>
               ))}
@@ -576,7 +576,7 @@ export function Coinminers() {
             <div className="mt-1 h-1 w-32 bg-black/60 border border-[color:var(--metal-dark)] overflow-hidden">
               <div className="h-full" style={{
                 width: `${(blockProgress / 50) * 100}%`,
-                background: "linear-gradient(90deg, var(--btc-gold), var(--neon-orange))",
+                background: "repeating-linear-gradient(90deg, var(--btc-gold) 0 4px, var(--neon-orange) 4px 5px, transparent 5px 7px)",
                 boxShadow: "0 0 6px var(--btc-gold-glow)",
               }} />
             </div>
@@ -613,10 +613,9 @@ export function Coinminers() {
       {/* Radial flash on shake */}
       {shake && (
         <div className="pointer-events-none fixed inset-0 z-[90] flex items-center justify-center">
-          <div className="w-[80vmin] h-[80vmin] rounded-full"
+          <div className="w-[80vmin] h-[80vmin] pixel-flash"
             style={{
-              background: "radial-gradient(circle, color-mix(in oklab, var(--neon-cyan) 25%, transparent), transparent 60%)",
-              animation: "radial-flash 280ms ease-out forwards",
+              animation: "radial-flash 280ms steps(8, end) forwards",
             }} />
         </div>
       )}
@@ -625,7 +624,7 @@ export function Coinminers() {
       <div className="flex flex-col lg:flex-row flex-1 min-h-0 overflow-hidden">
         {/* Sidebar */}
         <aside className="w-full lg:w-[180px] flex lg:flex-col gap-1 p-2 border-b lg:border-b-0 lg:border-r border-[color:var(--metal-light)] overflow-x-auto cyber-scroll shrink-0"
-          style={{ background: "linear-gradient(180deg, #14141d, #0a0a12)" }}>
+          style={{ background: "linear-gradient(180deg, #14141d 6px, #0a0a12 6px)" }}>
           {SIDEBAR.map(s => {
             const hasAlert = alerts[s.id];
             return (
@@ -636,7 +635,7 @@ export function Coinminers() {
                 <span>{s.label}</span>
                 {hasAlert && (
                   <span className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full"
-                    style={{ background: "var(--neon-red)", boxShadow: "0 0 6px var(--neon-red)", animation: "blink-led 1s ease-in-out infinite" }} />
+                    style={{ background: "var(--neon-red)", boxShadow: "0 0 6px var(--neon-red)", animation: "blink-led 1s steps(1, end) infinite" }} />
                 )}
               </button>
             );
@@ -671,7 +670,7 @@ export function Coinminers() {
 
         {/* Right shop / panel */}
         <aside className="w-full lg:w-[360px] border-t lg:border-t-0 lg:border-l border-[color:var(--metal-light)] overflow-y-auto cyber-scroll max-h-[55vh] lg:max-h-none lg:h-full"
-          style={{ background: "linear-gradient(180deg, #14141d, #0a0a12)" }}>
+          style={{ background: "linear-gradient(180deg, #14141d 6px, #0a0a12 6px)" }}>
           {tab === "upgrades" ? (
             <UpgradePanel btc={btc} levels={upgrades} onBuy={buyUpgrade} />
           ) : tab === "facilities" ? (
@@ -717,7 +716,7 @@ export function Coinminers() {
 
       {/* Bottom HUD */}
       <div className="h-7 border-t border-[color:var(--metal-light)] flex items-center px-3 gap-4 text-[12px] font-mono-pixel overflow-x-auto whitespace-nowrap shrink-0"
-        style={{ background: "linear-gradient(180deg, #0c0c14, #06060a)" }}>
+        style={{ background: "linear-gradient(180deg, #0c0c14 6px, #06060a 6px)" }}>
         <span className="text-neon-green">● ONLINE</span>
         <span className="text-muted-foreground">|</span>
         <span className="text-neon-cyan">RIGS {owned.length}</span>
@@ -749,7 +748,7 @@ export function Coinminers() {
       {/* Floating BTC pickups */}
       {floats.map(f => (
         <div key={f.id} className="fixed pointer-events-none btc-text font-pixel text-sm"
-          style={{ left: f.x, top: f.y, animation: "float-btc 1s ease-out forwards" }}>
+          style={{ left: f.x, top: f.y, animation: "float-btc 1s steps(8, end) forwards" }}>
           +₿{f.v.toFixed(4)}
         </div>
       ))}
@@ -858,7 +857,7 @@ function UpgradePanel({ btc, levels, onBuy }: { btc: number; levels: Record<stri
             <div className="mt-2 h-1.5 bg-black/60 rounded-sm overflow-hidden border border-[color:var(--metal-dark)]">
               <div className="h-full" style={{
                 width: `${u.max ? (lvl / u.max) * 100 : Math.min(100, lvl * 5)}%`,
-                background: "linear-gradient(90deg, var(--neon-cyan), var(--neon-purple))",
+                background: "repeating-linear-gradient(90deg, var(--neon-cyan) 0 4px, var(--neon-purple) 4px 5px, transparent 5px 7px)",
                 boxShadow: "0 0 6px var(--neon-cyan)",
               }} />
             </div>
@@ -948,7 +947,7 @@ function InventoryPanel({ owned, shelves: shelvesCount, shelfCost, btc, onBuyShe
                 return (
                   <div key={i} className={`group relative h-[100px] flex items-center justify-center ${m ? `rarity-${m.rarity}` : ""}`}
                     style={{
-                      background: "linear-gradient(180deg, #0c0c12, #050507)",
+                      background: "linear-gradient(180deg, #0c0c12 6px, #050507 6px)",
                       border: "1px solid var(--metal-dark)",
                       boxShadow: "inset 0 0 8px black",
                     }}>
@@ -957,7 +956,7 @@ function InventoryPanel({ owned, shelves: shelvesCount, shelfCost, btc, onBuyShe
                         <div style={{ transform: "scale(0.78)" }}>
                           <PixelGpu model={m} idx={ri * 4 + i} heatPct={Math.min(1, m.heat / 70)} />
                         </div>
-                        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1"
+                        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-1"
                           style={{ background: "rgba(0,0,0,0.78)" }}>
                           <button onClick={() => onUnequip(g!.id)}
                             className="btn-cyber px-2 py-1 font-pixel text-[8px] rounded-sm text-neon-orange">UNRIG</button>
@@ -982,7 +981,7 @@ function InventoryPanel({ owned, shelves: shelvesCount, shelfCost, btc, onBuyShe
           {/* shelf plank */}
           <div className="h-2 mx-1 -mt-px"
             style={{
-              background: "linear-gradient(180deg, var(--metal-light), var(--metal-mid) 40%, #000)",
+              background: "linear-gradient(180deg, var(--metal-light) 25%, var(--metal-mid) 25% 70%, var(--background) 70%)",
               boxShadow: "0 4px 10px rgba(0,0,0,0.7)",
               borderLeft: "1px solid var(--metal-light)",
               borderRight: "1px solid var(--metal-light)",
@@ -1011,7 +1010,7 @@ function InventoryPanel({ owned, shelves: shelvesCount, shelfCost, btc, onBuyShe
               return (
                 <div key={g.id} className={`relative p-1 rarity-${m.rarity}`}
                   style={{
-                    background: "linear-gradient(180deg, #0c0c12, #050507)",
+                    background: "linear-gradient(180deg, #0c0c12 6px, #050507 6px)",
                     border: "1px solid var(--metal-dark)",
                   }}>
                   <div className="flex items-center justify-center h-[68px]">
@@ -1048,7 +1047,7 @@ function ComingSoonPanel({ name }: { name: string }) {
       <div className="font-pixel text-[14px] text-neon-purple">{name.toUpperCase()}</div>
       <div className="font-mono-pixel text-[14px] text-muted-foreground">Module compiling…</div>
       <div className="mx-auto h-2 w-3/4 bg-black/60 border border-[color:var(--metal-dark)] overflow-hidden rounded-sm">
-        <div className="h-full pulse-glow" style={{ width: "40%", background: "linear-gradient(90deg, var(--neon-purple), var(--neon-cyan))" }} />
+        <div className="h-full pulse-glow" style={{ width: "40%", background: "repeating-linear-gradient(90deg, var(--neon-purple) 0 4px, var(--neon-cyan) 4px 5px, transparent 5px 7px)" }} />
       </div>
       <div className="font-mono-pixel text-[12px] text-neon-cyan/70">[ COMING SOON ]</div>
     </div>
@@ -1233,8 +1232,8 @@ function MissionsPanel({ btc: _btc, owned, hashrate, upgradesCount, claimed, onC
             <div className="mt-2 h-2 bg-black/60 border border-[color:var(--metal-dark)] overflow-hidden">
               <div className="h-full" style={{
                 width: `${pct}%`,
-                background: done ? "linear-gradient(90deg, var(--neon-green), var(--btc-gold))"
-                                 : "linear-gradient(90deg, var(--neon-cyan), var(--neon-purple))",
+                background: done ? "repeating-linear-gradient(90deg, var(--neon-green) 0 4px, var(--btc-gold) 4px 5px, transparent 5px 7px)"
+                                 : "repeating-linear-gradient(90deg, var(--neon-cyan) 0 4px, var(--neon-purple) 4px 5px, transparent 5px 7px)",
                 boxShadow: done ? "0 0 8px var(--neon-green)" : "0 0 4px var(--neon-cyan)",
               }} />
             </div>

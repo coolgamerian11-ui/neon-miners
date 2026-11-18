@@ -1,6 +1,7 @@
 import { memo } from "react";
 import type { OwnedGpu, GpuModel, OwnedCooler, OwnedPower, Carry, ShelfType } from "./types";
 import { GPU_MODELS, COOLER_MODELS, POWER_MODELS, ASIC_GPU_IDS } from "./data";
+import { PixelFan } from "./PixelSprites";
 import { PixelGpu } from "./PixelGpu";
 import { PixelCooler } from "./PixelCooler";
 import { PixelGenerator } from "./PixelGenerator";
@@ -28,19 +29,19 @@ const TIER_STYLE: Record<RackTier, {
   starter: {
     frameTop: "#3a3a44", frameBot: "#1a1a22",
     accent: "var(--neon-blue)", accent2: "var(--neon-cyan)",
-    rail: "linear-gradient(90deg,#2a2a32,#15151c,#2a2a32)",
+    rail: "linear-gradient(90deg,#2a2a32 25%,#15151c 25% 75%,#2a2a32 75%)",
     bolt: "#888", label: "RIG·UNIT", pipeAccent: "var(--neon-orange)",
   },
   mid: {
     frameTop: "#1f1f28", frameBot: "#08080c",
     accent: "var(--neon-cyan)", accent2: "var(--neon-orange)",
-    rail: "linear-gradient(90deg,#16161e,#06060a,#16161e)",
+    rail: "linear-gradient(90deg,#16161e 25%,#06060a 25% 75%,#16161e 75%)",
     bolt: "#aab", label: "RACK·MK2", pipeAccent: "var(--neon-cyan)",
   },
   endgame: {
     frameTop: "#0c0e1a", frameBot: "#040410",
     accent: "var(--neon-purple)", accent2: "var(--neon-cyan)",
-    rail: "linear-gradient(90deg,#0a0a18,#02020a,#0a0a18)",
+    rail: "linear-gradient(90deg,#0a0a18 25%,#02020a 25% 75%,#0a0a18 75%)",
     bolt: "#9bf", label: "Q·CORE", pipeAccent: "var(--neon-purple)",
   },
 };
@@ -69,7 +70,7 @@ function MiningRackInner({ index, perShelf = 4, row, tier, shelfType = "standard
       {/* ─── Top vent / cooling header ─── */}
       <div className="relative h-7 flex items-stretch"
         style={{
-          background: `linear-gradient(180deg, ${isAsic ? "#3a2a10" : s.frameTop}, ${isAsic ? "#1a1208" : s.frameBot})`,
+          background: `linear-gradient(180deg, ${isAsic ? "#3a2a10" : s.frameTop} 38%, ${isAsic ? "#1a1208" : s.frameBot} 38%)`,
           border: `1px solid ${isAsic ? "#caa018" : "#000"}`,
           borderBottom: "2px solid #000",
           boxShadow: isAsic
@@ -86,23 +87,7 @@ function MiningRackInner({ index, perShelf = 4, row, tier, shelfType = "standard
           {Array.from({ length: 3 }).map((_, i) => (
             <div key={i} className="absolute top-1/2 -translate-y-1/2 w-4 h-4"
               style={{ left: `${10 + i * 32}%` }}>
-              <div className={active ? "fan-spin" : ""}
-                style={{
-                  width: "100%", height: "100%",
-                  background: "radial-gradient(circle, #2a2a32 30%, #0a0a10 70%)",
-                  borderRadius: "50%",
-                  border: "1px solid #000",
-                  boxShadow: active ? `0 0 4px ${s.accent}` : "none",
-                  animationDuration: `${1.4 - heatPct * 0.8}s`,
-                }}>
-                <div className="absolute inset-0" style={{
-                  background:
-                    `conic-gradient(from 0deg, transparent 0 30deg, ${s.accent2}55 30deg 60deg, transparent 60deg 120deg, ${s.accent2}55 120deg 150deg, transparent 150deg 240deg, ${s.accent2}55 240deg 270deg, transparent 270deg)`,
-                  borderRadius: "50%",
-                  opacity: active ? 0.9 : 0.3,
-                }} />
-                <div className="absolute inset-[35%] rounded-full" style={{ background: "#000" }} />
-              </div>
+              <PixelFan size={16} color={active ? s.accent2 : s.frameTop} trim={s.frameTop} active={active} slow={heatPct < 0.5} />
             </div>
           ))}
         </div>
@@ -115,7 +100,7 @@ function MiningRackInner({ index, perShelf = 4, row, tier, shelfType = "standard
                 background: s.accent,
                 width: `${30 + ((i + index) * 17) % 60}%`,
                 boxShadow: `0 0 3px ${s.accent}`,
-                animation: `equalizer ${0.6 + (i * 0.2)}s ease-in-out ${i * 0.1}s infinite`,
+                animation: `pulse-soft ${0.6 + (i * 0.2)}s steps(1, end) ${i * 0.1}s infinite`,
               }} />
             ))}
           </div>
@@ -129,14 +114,13 @@ function MiningRackInner({ index, perShelf = 4, row, tier, shelfType = "standard
 
         {/* Inner bay */}
         <div className="flex-1 relative" style={{
-          background: `linear-gradient(180deg, ${s.frameBot}, #000 80%)`,
+          background: `linear-gradient(180deg, ${s.frameBot} 24%, #000 24%)`,
           borderLeft: "1px solid #000", borderRight: "1px solid #000",
         }}>
           {/* Back wall: perforated metal */}
           <div className="absolute inset-0 pointer-events-none" style={{
             background:
-              "radial-gradient(circle at 4px 4px, #0a0a10 1px, transparent 1.5px) 0 0/8px 8px," +
-              "linear-gradient(180deg,#0a0a12,#05050a)",
+              "repeating-conic-gradient(#0a0a12 0 25%, #05050a 0 50%) 0 0/8px 8px",
             opacity: 0.8,
           }} />
           {/* Tier-specific back accents */}
@@ -144,15 +128,13 @@ function MiningRackInner({ index, perShelf = 4, row, tier, shelfType = "standard
             <>
               {/* holographic platform glow */}
               <div className="absolute inset-x-2 inset-y-1 pointer-events-none" style={{
-                background: `linear-gradient(180deg, ${s.accent}22, transparent 60%, ${s.accent2}22)`,
-                animation: "pulse-soft 2.4s ease-in-out infinite",
+                background: `linear-gradient(180deg, ${s.accent}22 12%, transparent 12% 88%, ${s.accent2}22 88%)`,
+                animation: "pulse-soft 2.4s steps(1, end) infinite",
               }} />
               {/* energy conduit lines */}
               <svg className="absolute inset-0 w-full h-full pointer-events-none" preserveAspectRatio="none">
-                <line x1="0" y1="20%" x2="100%" y2="20%" stroke={s.accent2} strokeWidth="0.5" opacity="0.5"
-                  style={{ filter: `drop-shadow(0 0 3px ${s.accent2})` }} />
-                <line x1="0" y1="80%" x2="100%" y2="80%" stroke={s.accent} strokeWidth="0.5" opacity="0.5"
-                  style={{ filter: `drop-shadow(0 0 3px ${s.accent})` }} />
+                <line x1="0" y1="20%" x2="100%" y2="20%" stroke={s.accent2} strokeWidth="0.5" opacity="0.5" />
+                <line x1="0" y1="80%" x2="100%" y2="80%" stroke={s.accent} strokeWidth="0.5" opacity="0.5" />
               </svg>
             </>
           )}
@@ -190,7 +172,7 @@ function MiningRackInner({ index, perShelf = 4, row, tier, shelfType = "standard
       {/* ─── Bottom PDU (Power Distribution Unit) ─── */}
       <div className="relative h-6 flex items-center px-2 gap-1"
         style={{
-          background: `linear-gradient(180deg, ${s.frameTop}, ${s.frameBot})`,
+          background: `linear-gradient(180deg, ${s.frameTop} 35%, ${s.frameBot} 35%)`,
           border: "1px solid #000",
           borderTop: "2px solid #000",
           boxShadow: `inset 0 1px 0 #3a3a44, 0 4px 10px rgba(0,0,0,0.7)`,
@@ -204,7 +186,7 @@ function MiningRackInner({ index, perShelf = 4, row, tier, shelfType = "standard
         <div className="flex-1 h-2 relative" style={{ background: "#000", border: "1px solid #1a1a22" }}>
           <div className="h-full" style={{
             width: `${30 + heatPct * 60}%`,
-            background: `linear-gradient(90deg, ${s.accent2}, ${s.accent})`,
+            background: `repeating-linear-gradient(90deg, ${s.accent2} 0 4px, ${s.accent} 4px 6px, transparent 6px 8px)`,
             boxShadow: `0 0 4px ${s.accent2}`,
           }} />
         </div>
@@ -263,11 +245,10 @@ function MiningRackInner({ index, perShelf = 4, row, tier, shelfType = "standard
 
       {/* ─── Cable bundle leaving the bottom ─── */}
       <svg className="block w-full h-3" viewBox="0 0 100 12" preserveAspectRatio="none">
-        <path d="M20 0 Q22 8 30 12" stroke="#000" strokeWidth="2" fill="none" />
-        <path d="M50 0 Q48 6 56 12" stroke="#0a0a10" strokeWidth="2" fill="none" />
-        <path d="M80 0 Q82 7 76 12" stroke="#000" strokeWidth="2" fill="none" />
-        <path d="M50 0 Q48 6 56 12" stroke={s.accent} strokeWidth="0.4" fill="none" opacity="0.6"
-          style={{ filter: `drop-shadow(0 0 2px ${s.accent})` }} />
+        <path d="M20 0v4h3v4h4v4h3" stroke="#000" strokeWidth="2" fill="none" />
+        <path d="M50 0v5h2v4h4v3" stroke="#0a0a10" strokeWidth="2" fill="none" />
+        <path d="M80 0v6h-2v4h-2v2" stroke="#000" strokeWidth="2" fill="none" />
+        <path d="M50 0v5h2v4h4v3" stroke={s.accent} strokeWidth="0.4" fill="none" opacity="0.6" />
       </svg>
 
       {/* ─── Side ID label tag ─── */}
@@ -288,9 +269,9 @@ function MiningRackInner({ index, perShelf = 4, row, tier, shelfType = "standard
       {/* Heat shimmer when nearly full */}
       {heatPct > 0.6 && (
         <div className="absolute inset-0 pointer-events-none" style={{
-          background: `radial-gradient(ellipse at center, ${s.pipeAccent}11, transparent 70%)`,
+          background: `repeating-conic-gradient(${s.pipeAccent}11 0 25%, transparent 0 50%) 0 0 / 8px 8px`,
           mixBlendMode: "screen",
-          animation: "pulse-soft 1.6s ease-in-out infinite",
+          animation: "pulse-soft 1.6s steps(1, end) infinite",
         }} />
       )}
     </div>
@@ -301,7 +282,7 @@ function Beam({ side, tier }: { side: "left" | "right"; tier: RackTier }) {
   const s = TIER_STYLE[tier];
   return (
     <div className="relative w-3" style={{
-      background: `linear-gradient(180deg, ${s.frameTop} 0%, #000 50%, ${s.frameBot} 100%)`,
+      background: `linear-gradient(180deg, ${s.frameTop} 12%, ${s.frameBot} 12% 89%, #000 89%)`,
       borderLeft: side === "left" ? "1px solid #000" : "none",
       borderRight: side === "right" ? "1px solid #000" : "none",
       boxShadow: side === "left"
@@ -321,7 +302,7 @@ function Beam({ side, tier }: { side: "left" | "right"; tier: RackTier }) {
       {tier !== "starter" && (
         <div className="absolute inset-y-2 right-0 flex flex-col justify-around -mr-0.5">
           {Array.from({ length: 5 }).map((_, i) => (
-            <span key={i} className="led-blink w-1 h-1 rounded-full"
+            <span key={i} className="led-blink w-1 h-1 "
               style={{
                 background: i % 2 ? s.accent : s.accent2,
                 boxShadow: `0 0 3px currentColor`, color: i % 2 ? s.accent : s.accent2,
@@ -343,7 +324,7 @@ function Slot({ idx, model, tier, highlight = false, isAsic = false, onClick }:
     <div onClick={onClick} className="relative h-[78px] flex items-end justify-center cursor-pointer"
       style={{
         background:
-          "linear-gradient(180deg, #08080c, #02020610), " +
+          "linear-gradient(180deg, #08080c 18%, #02020610 18%), " +
           "repeating-linear-gradient(90deg, transparent 0 6px, rgba(255,255,255,0.02) 6px 7px)",
         border: highlight ? `1px solid var(--neon-green)` : "1px solid #000",
         boxShadow: model
@@ -394,7 +375,7 @@ function Slot({ idx, model, tier, highlight = false, isAsic = false, onClick }:
       {model && (
         <div className="absolute bottom-0 left-1 right-1 h-0.5"
           style={{
-            background: `linear-gradient(90deg, ${s.accent2}, ${s.accent})`,
+            background: `repeating-linear-gradient(90deg, ${s.accent2} 0 4px, ${s.accent} 4px 6px, transparent 6px 8px)`,
             boxShadow: `0 0 3px ${s.accent}`,
           }} />
       )}
@@ -404,8 +385,8 @@ function Slot({ idx, model, tier, highlight = false, isAsic = false, onClick }:
         <div className="absolute bottom-0 left-2 right-2 h-1"
           style={{
             background: s.accent,
-            filter: "blur(2px)", opacity: 0.7,
-            animation: "pulse-soft 1.6s ease-in-out infinite",
+            opacity: 0.7,
+            animation: "pulse-soft 1.6s steps(1, end) infinite",
           }} />
       )}
     </div>

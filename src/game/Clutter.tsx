@@ -34,23 +34,23 @@ export function Clutter() {
         </svg>
       </div>
       {/* Sticky note */}
-      <div className="absolute top-[55%] right-2 w-12 h-12 rotate-6"
+      <div className="absolute top-[55%] right-2 w-12 h-12 "
         style={{ background: "#f4e060", boxShadow: "1px 1px 0 #000, 2px 2px 0 rgba(0,0,0,0.5)" }}>
         <div className="text-[8px] font-pixel text-black p-1 leading-tight">DO NOT TOUCH!!</div>
       </div>
       {/* Soda can stack */}
       <div className="absolute bottom-3 right-56 flex gap-0.5">
-        <div className="w-2 h-4" style={{ background: "linear-gradient(180deg,#33aa55,#114422)", boxShadow: "0 0 0 1px #000" }} />
-        <div className="w-2 h-4" style={{ background: "linear-gradient(180deg,#aa3333,#441111)", boxShadow: "0 0 0 1px #000" }} />
+        <div className="w-2 h-4" style={{ background: "linear-gradient(180deg,#33aa55 45%,#114422 45%)", boxShadow: "0 0 0 1px #000" }} />
+        <div className="w-2 h-4" style={{ background: "linear-gradient(180deg,#aa3333 45%,#441111 45%)", boxShadow: "0 0 0 1px #000" }} />
       </div>
       {/* Danger sign */}
       <div className="absolute top-32 right-44 px-1 py-0.5 font-pixel text-[7px] text-black"
-        style={{ background: "#ffd700", border: "1px solid #000", transform: "rotate(-4deg)" }}>
+        style={{ background: "#ffd700", border: "1px solid #000", boxShadow: "2px 2px 0 #000" }}>
         ⚠ HV
       </div>
       {/* Dust pile */}
-      <div className="absolute bottom-1 left-44 w-6 h-1.5 rounded-full"
-        style={{ background: "rgba(160,140,100,0.5)", filter: "blur(1px)" }} />
+      <div className="absolute bottom-1 left-44 w-6 h-1.5 pixel-grain"
+        style={{ background: "rgba(160,140,100,0.5)" }} />
     </div>
   );
 }

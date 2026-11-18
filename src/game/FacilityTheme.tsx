@@ -1,5 +1,3 @@
-import type { CSSProperties } from "react";
-
 export interface FacilityVisuals {
   /** wrapper background gradient */
   background: string;
@@ -15,52 +13,52 @@ export interface FacilityVisuals {
 
 export const FACILITY_VISUALS: Record<string, FacilityVisuals> = {
   garage: {
-    background: "linear-gradient(180deg, #2a2218 0%, #1a140c 60%, #0d0a06 100%)",
+    background: "linear-gradient(180deg, #2a2218 32%, #1a140c 32% 72%, #0d0a06 72%)",
     accent: "var(--neon-orange)",
     glow:   "var(--btc-gold-glow)",
-    floor:  "linear-gradient(180deg, #2a1f14 0%, #14100a 100%)",
+    floor:  "linear-gradient(180deg, #2a1f14 32%, #14100a 32%)",
     label:  "// GARAGE · zone 1",
   },
   basement: {
-    background: "linear-gradient(180deg, #1a1820 0%, #0e0d14 60%, #08070c 100%)",
+    background: "linear-gradient(180deg, #1a1820 32%, #0e0d14 32% 72%, #08070c 72%)",
     accent: "var(--neon-green)",
     glow:   "color-mix(in oklab, var(--neon-green) 60%, transparent)",
-    floor:  "linear-gradient(180deg, #14141a 0%, #08080c 100%)",
+    floor:  "linear-gradient(180deg, #14141a 32%, #08080c 32%)",
     label:  "// BASEMENT · sublevel B2",
   },
   warehouse: {
-    background: "linear-gradient(180deg, #14202a 0%, #0a1018 60%, #050810 100%)",
+    background: "linear-gradient(180deg, #14202a 32%, #0a1018 32% 72%, #050810 72%)",
     accent: "var(--neon-cyan)",
     glow:   "color-mix(in oklab, var(--neon-cyan) 60%, transparent)",
-    floor:  "linear-gradient(180deg, #1a2028 0%, #0a0e14 100%)",
+    floor:  "linear-gradient(180deg, #1a2028 32%, #0a0e14 32%)",
     label:  "// WAREHOUSE · sector 7",
   },
   vault: {
-    background: "linear-gradient(180deg, #2a0a0e 0%, #14060a 60%, #08030a 100%)",
+    background: "linear-gradient(180deg, #2a0a0e 32%, #14060a 32% 72%, #08030a 72%)",
     accent: "var(--neon-red)",
     glow:   "color-mix(in oklab, var(--neon-red) 70%, transparent)",
-    floor:  "linear-gradient(180deg, #1a0a0c 0%, #08040a 100%)",
+    floor:  "linear-gradient(180deg, #1a0a0c 32%, #08040a 32%)",
     label:  "// VAULT · clearance Δ",
   },
   datacenter: {
-    background: "linear-gradient(180deg, #0a1828 0%, #061020 60%, #03070f 100%)",
+    background: "linear-gradient(180deg, #0a1828 32%, #061020 32% 72%, #03070f 72%)",
     accent: "var(--neon-blue)",
     glow:   "color-mix(in oklab, var(--neon-blue) 70%, transparent)",
-    floor:  "linear-gradient(180deg, #0c1420 0%, #04070d 100%)",
+    floor:  "linear-gradient(180deg, #0c1420 32%, #04070d 32%)",
     label:  "// DATA-CENTER · row A14",
   },
   quantum: {
-    background: "linear-gradient(180deg, #1a0a2a 0%, #0e0418 60%, #06020c 100%)",
+    background: "linear-gradient(180deg, #1a0a2a 32%, #0e0418 32% 72%, #06020c 72%)",
     accent: "var(--neon-purple)",
     glow:   "color-mix(in oklab, var(--neon-purple) 80%, transparent)",
-    floor:  "linear-gradient(180deg, #160a24 0%, #06020c 100%)",
+    floor:  "linear-gradient(180deg, #160a24 32%, #06020c 32%)",
     label:  "// QUANTUM-LAB · cell Q-1",
   },
   space: {
-    background: "linear-gradient(180deg, #02030a 0%, #050818 50%, #0a0218 100%)",
+    background: "linear-gradient(180deg, #02030a 32%, #050818 32% 72%, #0a0218 72%)",
     accent: "var(--neon-cyan)",
     glow:   "color-mix(in oklab, var(--neon-cyan) 80%, transparent)",
-    floor:  "linear-gradient(180deg, #0a1020 0%, #02030a 100%)",
+    floor:  "linear-gradient(180deg, #0a1020 32%, #02030a 32%)",
     label:  "// ORBITAL · station COIN-1",
   },
 };
@@ -71,7 +69,6 @@ export function getFacilityVisuals(id: string): FacilityVisuals {
 
 /** Per-facility decorative overlay layer (background props, foreground props). */
 export function FacilityDecor({ facility }: { facility: string }) {
-  const v = getFacilityVisuals(facility);
 
   if (facility === "garage") {
     return (
@@ -101,7 +98,7 @@ export function FacilityDecor({ facility }: { facility: string }) {
         {/* Oil drum */}
         <div className="absolute bottom-16 right-32 w-7 h-12 pointer-events-none"
           style={{
-            background: "linear-gradient(180deg, #4a2818 0%, #2a1408 100%)",
+            background: "linear-gradient(180deg, #4a2818 32%, #2a1408 32%)",
             border: "1px solid #6a3a22",
             borderRadius: "1px",
             boxShadow: "inset -2px 0 0 rgba(0,0,0,0.5), 0 4px 6px rgba(0,0,0,0.7)",
@@ -124,14 +121,14 @@ export function FacilityDecor({ facility }: { facility: string }) {
         {[20, 55, 80].map((x, i) => (
           <div key={i} className="absolute top-0 pointer-events-none flicker" style={{ left: `${x}%` }}>
             <div className="w-px h-12 bg-[#3a3a3a] mx-auto" />
-            <div className="w-3 h-3 -mt-px mx-auto rounded-full"
-              style={{ background: "radial-gradient(circle at 30% 30%, #fff8c0, #aa8030)", boxShadow: `0 0 16px ${v.glow}` }} />
+            <div className="w-3 h-3 -mt-px mx-auto "
+              style={{ background: "linear-gradient(180deg, var(--btc-gold) 60%, var(--neon-orange) 60%)", boxShadow: "2px 2px 0 var(--pixel-light)" }} />
           </div>
         ))}
         {/* Concrete pillar */}
         <div className="absolute top-0 bottom-16 left-[20%] w-6 pointer-events-none"
           style={{
-            background: "linear-gradient(90deg, #1a1a1f 0%, #2a2a30 50%, #1a1a1f 100%)",
+            background: "linear-gradient(90deg, #1a1a1f 32%, #2a2a30 32% 72%, #1a1a1f 72%)",
             border: "1px solid #0a0a0c",
             boxShadow: "inset 0 0 20px rgba(0,0,0,0.6)",
           }}>
@@ -140,7 +137,7 @@ export function FacilityDecor({ facility }: { facility: string }) {
         </div>
         {/* Mold/water stain */}
         <div className="absolute bottom-20 left-32 w-20 h-8 pointer-events-none opacity-50"
-          style={{ background: "radial-gradient(ellipse, #2a3a20 0%, transparent 70%)" }} />
+          style={{ background: "repeating-conic-gradient(#2a3a20 0 25%, transparent 0 50%) 0 0 / 4px 4px", clipPath: "polygon(0 55%,20% 55%,20% 25%,55% 25%,55% 40%,80% 40%,80% 65%,100% 65%,100% 100%,0 100%)" }} />
       </>
     );
   }
@@ -160,7 +157,7 @@ export function FacilityDecor({ facility }: { facility: string }) {
         </svg>
         {/* Yellow warning floor stripes */}
         <div className="absolute bottom-16 left-0 right-0 h-3 pointer-events-none opacity-70"
-          style={{ background: "repeating-linear-gradient(135deg, #d4a020 0 8px, #1a1410 8px 14px)" }} />
+          style={{ background: "repeating-conic-gradient(#d4a020 0 25%, #1a1410 0 50%) 0 0 / 12px 12px" }} />
         {/* Forklift silhouette */}
         <svg className="absolute bottom-16 left-12 w-20 h-14 pointer-events-none" viewBox="0 0 80 56">
           <rect x="20" y="10" width="34" height="22" fill="#d4a020" stroke="#000" />
@@ -172,7 +169,7 @@ export function FacilityDecor({ facility }: { facility: string }) {
         </svg>
         {/* Crates */}
         <div className="absolute bottom-16 left-44 w-10 h-10 pointer-events-none"
-          style={{ background: "linear-gradient(180deg, #5a3a20, #3a2410)", border: "1px solid #1a1008" }}>
+          style={{ background: "linear-gradient(180deg, #5a3a20 32%, #3a2410 32%)", border: "1px solid #1a1008" }}>
           <div className="absolute inset-1 border border-[#3a2410]" />
         </div>
       </>
@@ -185,16 +182,16 @@ export function FacilityDecor({ facility }: { facility: string }) {
         {/* Vault door silhouette */}
         <div className="absolute bottom-16 left-2 w-24 h-32 pointer-events-none"
           style={{
-            background: "radial-gradient(circle at 50% 40%, #2a1010 0%, #14080a 60%, #08020a 100%)",
+            background: "radial-gradient(circle at 50% 40%, #2a1010 32%, #14080a 32% 72%, #08020a 72%)",
             border: "2px solid #4a1a1a",
-            borderRadius: "8px",
+            
             boxShadow: "inset 0 0 18px rgba(0,0,0,0.8), 0 0 12px color-mix(in oklab, var(--neon-red) 40%, transparent)",
           }}>
           {/* bolts */}
           {[0,1,2,3,4,5,6,7].map(i => {
             const a = (i / 8) * Math.PI * 2;
             return (
-              <div key={i} className="absolute w-1.5 h-1.5 rounded-full"
+              <div key={i} className="absolute w-1.5 h-1.5 "
                 style={{
                   left: `${50 + Math.cos(a) * 38}%`, top: `${40 + Math.sin(a) * 32}%`,
                   background: "#7a3a3a", border: "1px solid #2a0a0a",
@@ -202,22 +199,22 @@ export function FacilityDecor({ facility }: { facility: string }) {
             );
           })}
           {/* spinner wheel */}
-          <div className="absolute left-1/2 top-[40%] -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full"
+          <div className="absolute left-1/2 top-[40%] -translate-x-1/2 -translate-y-1/2 w-10 h-10 "
             style={{
-              background: "radial-gradient(circle, #5a2020, #2a0a0a)",
+              background: "linear-gradient(180deg, #5a2020 50%, #2a0a0a 50%)",
               border: "2px solid #7a3030",
               boxShadow: "inset 0 0 8px rgba(0,0,0,0.8)",
             }}>
-            <div className="absolute inset-0 rounded-full border-t-2 border-[color:var(--neon-red)]"
-              style={{ animation: "spin-fast 8s linear infinite" }} />
+            <div className="absolute inset-0  border-t-2 border-[color:var(--neon-red)]"
+              style={{ animation: "pulse-soft 2s steps(1, end) infinite" }} />
           </div>
         </div>
         {/* Red emergency strobe */}
-        <div className="absolute top-2 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full pointer-events-none flicker"
+        <div className="absolute top-2 left-1/2 -translate-x-1/2 w-3 h-3  pointer-events-none flicker"
           style={{ background: "var(--neon-red)", boxShadow: "0 0 30px var(--neon-red), 0 0 60px var(--neon-red)" }} />
         {/* Caution tape */}
         <div className="absolute top-2 left-0 right-0 h-2 opacity-60 pointer-events-none"
-          style={{ background: "repeating-linear-gradient(135deg, #d4a020 0 10px, #1a1410 10px 16px)" }} />
+          style={{ background: "repeating-conic-gradient(#d4a020 0 25%, #1a1410 0 50%) 0 0 / 8px 8px" }} />
       </>
     );
   }
@@ -237,15 +234,20 @@ export function FacilityDecor({ facility }: { facility: string }) {
           <rect x="34" y="0" width="12" height="20" fill="#3a3a42" stroke="#000" />
           <line x1="40" y1="20" x2="40" y2="60" stroke="#5a5a62" strokeWidth="6" />
           <circle cx="40" cy="60" r="5" fill="#0a1828" stroke="#5a5a62" />
-          <line x1="40" y1="60" x2="20" y2="100" stroke="#5a5a62" strokeWidth="5">
-            <animateTransform attributeName="transform" type="rotate" from="0 40 60" to="20 40 60" dur="3s" repeatCount="indefinite" values="0 40 60;20 40 60;0 40 60" />
-          </line>
-          <rect x="14" y="98" width="12" height="6" fill="#7a7a82" />
-          <circle cx="20" cy="104" r="2" fill="var(--neon-blue)" style={{ filter: "drop-shadow(0 0 4px var(--neon-blue))" }} />
+          <g className="pixel-arm" style={{ animationDelay: "-0.75s" }}>
+            <path d="M40 60v16H30v12H20v12" stroke="#5a5a62" strokeWidth="6" fill="none" />
+            <rect x="14" y="98" width="12" height="6" fill="#7a7a82" />
+            <rect x="18" y="104" width="4" height="2" fill="var(--neon-blue)" />
+          </g>
+          <g className="pixel-arm" style={{ animationDelay: "-2.25s" }}>
+            <path d="M40 60v12H26v8H14v12" stroke="#5a5a62" strokeWidth="6" fill="none" />
+            <rect x="8" y="90" width="12" height="6" fill="#7a7a82" />
+            <rect x="12" y="96" width="4" height="2" fill="var(--neon-blue)" />
+          </g>
         </svg>
         {/* Cooling pipes overhead */}
         <div className="absolute top-3 left-[10%] right-[10%] h-2 pointer-events-none"
-          style={{ background: "linear-gradient(180deg, #4a5058, #1a1f24)", borderRadius: "2px",
+          style={{ background: "linear-gradient(180deg, #4a5058 32%, #1a1f24 32%)", borderRadius: "2px",
             boxShadow: "0 2px 6px rgba(0,0,0,0.6)" }} />
       </>
     );
@@ -254,30 +256,23 @@ export function FacilityDecor({ facility }: { facility: string }) {
   if (facility === "quantum") {
     return (
       <>
-        {/* Holographic torus */}
-        <div className="absolute top-8 left-6 w-20 h-20 pointer-events-none"
-          style={{
-            background: "radial-gradient(circle, color-mix(in oklab, var(--neon-purple) 30%, transparent) 0%, transparent 70%)",
-            animation: "pulse-glow 3s ease-in-out infinite",
-          }}>
-          <div className="absolute inset-0 rounded-full border-2 border-[color:var(--neon-purple)] opacity-70"
-            style={{ animation: "spin-fast 6s linear infinite" }} />
-          <div className="absolute inset-3 rounded-full border border-[color:var(--neon-cyan)] opacity-60"
-            style={{ animation: "spin-fast 4s linear reverse infinite" }} />
-          <div className="absolute inset-0 flex items-center justify-center font-pixel text-[10px] text-neon-purple">Q</div>
-        </div>
+        <svg viewBox="0 0 40 40" className="absolute top-8 left-6 w-20 h-20 pointer-events-none" shapeRendering="crispEdges" aria-hidden="true">
+          <path d="M14 2h12v3h7v4h4v7h3v8h-3v7h-4v4h-7v3H14v-3H7v-4H3v-7H0v-8h3V9h4V5h7z" fill="none" stroke="var(--neon-purple)" />
+          <path d="M15 8h10v3h6v6h3v6h-3v6h-6v3H15v-3H9v-6H6v-6h3v-6h6z" fill="none" stroke="var(--neon-cyan)" className="pulse-glow" />
+          <path d="M16 15h8v8h-8zm5 7v3h4" fill="none" stroke="var(--neon-purple)" />
+        </svg>
         {/* Floor energy lines */}
         <svg className="absolute bottom-16 left-0 right-0 h-12 w-full pointer-events-none" viewBox="0 0 800 48" preserveAspectRatio="none">
-          <path d="M0 24 Q200 4 400 24 T800 24" stroke="var(--neon-purple)" strokeWidth="1" fill="none" opacity="0.6" />
-          <path d="M0 30 Q200 50 400 30 T800 30" stroke="var(--neon-cyan)" strokeWidth="1" fill="none" opacity="0.5" />
+          <path d="M0 24h80V18h100v-4h90v4h70v6h60v4h90v6h130v-6h100v-4h80" stroke="var(--neon-purple)" strokeWidth="1" fill="none" opacity="0.6" />
+          <path d="M0 30h90v7h100v4h100v-5h110v-6h110v-6h110v-4h90v6h90" stroke="var(--neon-cyan)" strokeWidth="1" fill="none" opacity="0.5" />
         </svg>
         {/* Floating qubit nodes */}
         {[15, 50, 80].map((x, i) => (
-          <div key={i} className="absolute w-1.5 h-1.5 rounded-full pointer-events-none"
+          <div key={i} className="absolute w-1.5 h-1.5  pointer-events-none"
             style={{
               left: `${x}%`, top: `${20 + i * 10}%`,
               background: "var(--neon-cyan)", boxShadow: "0 0 10px var(--neon-cyan)",
-              animation: `dust-float ${4 + i}s linear ${i * 0.7}s infinite`,
+              animation: `dust-float ${4 + i}s steps(8, end) ${i * 0.7}s infinite`,
             }} />
         ))}
       </>
@@ -287,22 +282,17 @@ export function FacilityDecor({ facility }: { facility: string }) {
   if (facility === "space") {
     return (
       <>
-        {/* Star field */}
-        <div className="absolute inset-0 pointer-events-none opacity-90"
-          style={{
-            background: "radial-gradient(2px 2px at 12% 18%, white, transparent), \
-                         radial-gradient(1px 1px at 28% 64%, white, transparent), \
-                         radial-gradient(2px 2px at 48% 22%, #aac8ff, transparent), \
-                         radial-gradient(1px 1px at 71% 56%, white, transparent), \
-                         radial-gradient(1.5px 1.5px at 85% 12%, white, transparent), \
-                         radial-gradient(1px 1px at 92% 78%, #ffd28a, transparent)",
-          }} />
-        {/* Earth on horizon */}
-        <div className="absolute bottom-12 -left-20 w-72 h-72 rounded-full pointer-events-none"
-          style={{
-            background: "radial-gradient(circle at 30% 30%, #4ab4e0 0%, #2060a0 40%, #0a2040 70%, transparent 75%)",
-            boxShadow: "0 0 60px color-mix(in oklab, var(--neon-cyan) 40%, transparent)",
-          }} />
+        <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
+          {Array.from({ length: 24 }, (_, i) => (
+            <span key={i} className="absolute bg-foreground pulse-glow" style={{ top: `${(17 + i * 29) % 87}%`, left: `${(5 + i * 41) % 100}%`, width: i % 4 ? 2 : 4, height: i % 4 ? 2 : 4, animationDelay: `${i * -0.17}s` }} />
+          ))}
+        </div>
+        <svg className="absolute bottom-12 -left-20 w-72 h-72 pointer-events-none" viewBox="0 0 48 48" shapeRendering="crispEdges" aria-hidden="true">
+          <path d="M16 2h16v2h5v3h4v4h3v5h2v16h-2v5h-3v4h-4v3h-5v2H16v-2h-5v-3H7v-4H4v-5H2V16h2v-5h3V7h4V4h5z" fill="#164677" stroke="var(--neon-blue)" />
+          <path d="M13 6h13v4h4v6h-6v4h-6v6h-5v-4H8v-7H5v-4h8zm16 21h6v3h5v7h-5v4H25v-6h4z" fill="#348579" />
+          <path d="M7 14h4v-2h12v2h-7v3H7zm16 9h10v2h5v3H27v-2h-4zm-5 12h8v2h-8z" fill="#90b8bc" opacity="0.8" />
+          <path d="M44 16h2v16h-2v5h-3v4h-4v3h-5v2H16v-2h-5v-3h21v-4h5v-6h4v-9h3z" fill="#0b253f" opacity="0.8" />
+        </svg>
         {/* Solar panel array */}
         <svg className="absolute top-6 right-2 w-32 h-20 pointer-events-none" viewBox="0 0 128 80">
           <rect x="60" y="36" width="8" height="6" fill="#5a5a62" />

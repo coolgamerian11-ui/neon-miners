@@ -34,7 +34,7 @@ function DockInner({ owned, coolers, powers, carry, setCarry, onSellGpu, onSellC
 
   return (
     <div className="border-t-2 border-[color:var(--metal-light)] shrink-0"
-      style={{ background: "linear-gradient(180deg, #0c0c14, #06060a)" }}>
+      style={{ background: "linear-gradient(180deg, #0c0c14 6px, #06060a 6px)" }}>
       <div className="flex items-stretch gap-1 px-2 pt-1">
         <TabBtn active={tab === "gpu"}    onClick={() => setTab("gpu")}    label="GPUs"     count={counts.gpu}    color="var(--neon-cyan)" />
         <TabBtn active={tab === "cooler"} onClick={() => setTab("cooler")} label="Coolers"  count={counts.cooler} color="var(--neon-blue)" />

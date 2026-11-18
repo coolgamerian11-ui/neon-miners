@@ -1,7 +1,6 @@
 @import "tailwindcss" source(none);
 @source "../src";
 @import "tw-animate-css";
-@import url("https://fonts.googleapis.com/css2?family=VT323&family=Press+Start+2P&display=swap");
 
 @custom-variant dark (&:is(.dark *));
 
@@ -87,8 +86,6 @@
     font-size: 15px;
     overflow: hidden;
     image-rendering: pixelated;
-    image-rendering: -moz-crisp-edges;
-    image-rendering: crisp-edges;
     -webkit-font-smoothing: none;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: geometricPrecision;
@@ -96,56 +93,54 @@
   svg { shape-rendering: crispEdges; }
   button, .metal-panel, .btn-cyber, .btn-buy { border-radius: 0 !important; }
   input, select, textarea, .font-mono-pixel { font-family: "VT323", monospace; }
-  .font-pixel { font-family: "Press Start 2P", "VT323", monospace; letter-spacing: 0.5px; }
+  .font-pixel { font-family: "Press Start 2P", "VT323", monospace; letter-spacing: 0; }
 }
 
-.font-pixel { font-family: "Press Start 2P", monospace; letter-spacing: 0.02em; }
+.font-pixel { font-family: "Press Start 2P", monospace; letter-spacing: 0; }
 .font-mono-pixel { font-family: "VT323", monospace; font-size: 1.05rem; }
 
-@keyframes spin-fast { to { transform: rotate(360deg); } }
-@keyframes blink-led { 0%, 80% { opacity: 1; } 90% { opacity: 0.25; } 100% { opacity: 1; } }
-@keyframes flicker { 0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% { opacity: 1; } 20%, 24%, 55% { opacity: 0.4; } }
-@keyframes pulse-glow { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.5); } }
-@keyframes float-btc { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-50px) scale(1.4); opacity: 0; } }
-@keyframes scanline { 0% { transform: translateY(-100%); } 100% { transform: translateY(100vh); } }
-@keyframes rain-fall { from { transform: translateY(-10px); opacity: 0.6; } to { transform: translateY(180px); opacity: 0; } }
-@keyframes heat-shimmer { 0%, 100% { transform: translateY(0) scaleY(1); opacity: 0.6; } 50% { transform: translateY(-3px) scaleY(1.1); opacity: 0.9; } }
+/* The sprite camera holds each pose until the next pixel frame. */
+@keyframes pixel-frame { 0% { opacity: 1; } 25%, 100% { opacity: 0; } }
+@keyframes blink-led { 0%, 100% { opacity: 1; } 80% { opacity: 0.35; } }
+@keyframes flicker { 0%, 19%, 21%, 56%, 100% { opacity: 1; } 20%, 55% { opacity: 0.45; } }
+@keyframes pulse-glow { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+@keyframes float-btc { to { transform: translateY(-48px); opacity: 0; } }
+@keyframes rain-fall { from { transform: translateY(-12px); opacity: 0.7; } to { transform: translateY(156px); opacity: 0.15; } }
 @keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-@keyframes city-blink { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
-@keyframes equalizer { 0%, 100% { height: 20%; } 25% { height: 80%; } 50% { height: 45%; } 75% { height: 95%; } }
-@keyframes dust-float { 0% { transform: translate(0,0); opacity: 0; } 30% { opacity: 0.5; } 100% { transform: translate(40px,-100px); opacity: 0; } }
-@keyframes spark { 0% { transform: translate(0,0) scale(1); opacity: 1; } 100% { transform: translate(var(--sx), var(--sy)) scale(0); opacity: 0; } }
-@keyframes float-up { 0% { transform: translateY(0) scale(1); opacity: 0; } 15% { opacity: 1; } 100% { transform: translateY(-90px) scale(1.1); opacity: 0; } }
-@keyframes pulse-num { 0%,100% { transform: scale(1); } 50% { transform: scale(1.08); } }
-@keyframes screen-shake { 0%,100% { transform: translate(0,0); } 20% { transform: translate(-3px,2px); } 40% { transform: translate(3px,-2px); } 60% { transform: translate(-2px,-2px); } 80% { transform: translate(2px,2px); } }
-@keyframes radial-flash { 0% { opacity: 0.6; transform: scale(0.6); } 100% { opacity: 0; transform: scale(2); } }
-@keyframes spin-border { to { transform: rotate(360deg); } }
-@keyframes server-pulse { 0%,100% { box-shadow: 0 0 0 transparent; } 50% { box-shadow: 0 0 16px var(--neon-cyan), inset 0 0 12px color-mix(in oklab, var(--neon-cyan) 30%, transparent); } }
-@keyframes sway { 0%,100% { transform: rotate(-1deg); } 50% { transform: rotate(1.5deg); } }
-@keyframes steam { 0% { transform: translateY(0) scale(0.8); opacity: 0; } 25% { opacity: 0.6; } 100% { transform: translateY(-60px) scale(1.6); opacity: 0; } }
-@keyframes osc-fan { 0%,100% { transform: rotate(-25deg); } 50% { transform: rotate(25deg); } }
-@keyframes scan-sweep { 0% { transform: translateY(-110%); } 100% { transform: translateY(110%); } }
+@keyframes equalizer { 0%,100% { clip-path: inset(66% 0 0); } 25% { clip-path: inset(20% 0 0); } 50% { clip-path: inset(46% 0 0); } 75% { clip-path: inset(0); } }
+@keyframes dust-float { 0% { opacity: 0; } 25% { opacity: 0.6; } 100% { transform: translate(32px,-80px); opacity: 0; } }
+@keyframes spark { to { transform: translate(var(--sx), var(--sy)); opacity: 0; } }
+@keyframes float-up { 0% { opacity: 0; } 15% { opacity: 1; } 100% { transform: translateY(-88px); opacity: 0; } }
+@keyframes pulse-num { 50% { color: var(--foreground); } }
+@keyframes screen-shake { 0%,100% { transform: translate(0,0); } 20% { transform: translate(-4px,2px); } 40% { transform: translate(4px,-2px); } 60% { transform: translate(-2px,-2px); } 80% { transform: translate(2px,2px); } }
+@keyframes radial-flash { from { opacity: 0.55; } to { opacity: 0; } }
+@keyframes server-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.75; } }
+@keyframes sway { 0%,100% { transform: translateX(0); } 50% { transform: translateX(4px); } }
+@keyframes steam { 0% { opacity: 0; } 25% { opacity: 0.5; } 100% { transform: translate(-8px,-64px); opacity: 0; } }
+@keyframes scan-sweep { from { top: 0; } to { top: 100%; } }
+@keyframes pulse-soft { 0%,100% { opacity: 0.45; } 50% { opacity: 1; } }
+@keyframes pixel-arm { 50% { opacity: 0; } }
 
-.spin-fan { animation: spin-fast 0.8s linear infinite; transform-origin: 0 0; transform-box: view-box; }
-.spin-fan-slow { animation: spin-fast 3s linear infinite; transform-origin: 0 0; transform-box: view-box; }
-.led-blink { animation: blink-led 1.4s ease-in-out infinite; }
-.flicker { animation: flicker 4s linear infinite; }
-.pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
+.pixel-frame { animation: pixel-frame var(--frame-cycle) steps(1, end) var(--frame-offset) infinite; }
+.led-blink { animation: blink-led 1.4s steps(1, end) infinite; }
+.flicker { animation: flicker 4s steps(1, end) infinite; }
+.pulse-glow { animation: pulse-glow 2s steps(1, end) infinite; }
+.pixel-arm { animation: pixel-arm 3s steps(1, end) infinite; }
 
 .cyber-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
 .cyber-scroll::-webkit-scrollbar-track { background: var(--metal-dark); }
 .cyber-scroll::-webkit-scrollbar-thumb {
-  background: linear-gradient(var(--neon-cyan), var(--neon-blue));
-  border-radius: 2px;
+  background: linear-gradient(var(--neon-cyan) 25%, var(--neon-blue) 25%);
+  border-radius: 0;
 }
 
 .metal-panel {
-  background: linear-gradient(180deg, var(--metal-mid), var(--metal-dark));
+  background: linear-gradient(180deg, var(--metal-mid) 35%, var(--metal-dark) 35%);
   border: 1px solid var(--metal-light);
   box-shadow:
     inset 0 1px 0 color-mix(in oklab, var(--metal-light) 90%, white),
     inset 0 -1px 0 black,
-    0 4px 14px rgba(0,0,0,0.6);
+    2px 4px 0 color-mix(in oklab, var(--background) 80%, transparent);
 }
 
 .neon-frame {
@@ -157,11 +152,10 @@
 
 .btn-cyber {
   position: relative;
-  background: linear-gradient(180deg, var(--metal-mid), var(--metal-dark));
+  background: linear-gradient(180deg, var(--metal-mid) 35%, var(--metal-dark) 35%);
   border: 1px solid var(--metal-light);
   color: var(--neon-cyan);
   text-shadow: 0 0 6px color-mix(in oklab, var(--neon-cyan) 60%, transparent);
-  transition: all 0.15s ease;
 }
 .btn-cyber:hover {
   border-color: var(--neon-cyan);
@@ -175,14 +169,13 @@
 }
 
 .btn-buy {
-  background: linear-gradient(180deg, oklch(0.55 0.2 145), oklch(0.3 0.15 145));
+  background: linear-gradient(180deg, oklch(0.45 0.15 145) 35%, oklch(0.3 0.15 145) 35%);
   color: white;
   text-shadow: 0 0 6px var(--neon-green);
   border: 1px solid var(--neon-green);
   box-shadow: 0 0 10px color-mix(in oklab, var(--neon-green) 50%, transparent), inset 0 1px 0 rgba(255,255,255,0.3);
-  transition: all 0.15s ease;
 }
-.btn-buy:hover { animation: pulse-glow 0.8s ease-in-out infinite; transform: translateY(-1px); }
+.btn-buy:hover { animation: pulse-glow 0.8s steps(1, end) infinite; transform: translateY(-1px); }
 .btn-buy:disabled {
   background: var(--metal-dark); color: var(--muted-foreground);
   border-color: var(--metal-light); box-shadow: none; text-shadow: none; cursor: not-allowed;
@@ -195,7 +188,8 @@
 }
 .vignette {
   position: absolute; inset: 0; pointer-events: none; z-index: 59;
-  background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.55) 100%);
+  box-shadow: inset 0 0 0 2px color-mix(in oklab, var(--background) 65%, transparent),
+    inset 0 0 0 6px color-mix(in oklab, var(--background) 25%, transparent);
 }
 
 .btc-text { color: var(--btc-gold); text-shadow: 0 0 10px var(--btc-gold-glow), 0 0 20px color-mix(in oklab, var(--btc-gold) 50%, transparent); }
@@ -213,13 +207,37 @@
   background-size: 16px 16px;
 }
 
-/* Pixelated checker overlay for walls */
+/* Staggered masonry, with square flecks rather than smooth noise. */
 .pixel-wall {
-  background-image:
-    linear-gradient(45deg, rgba(255,255,255,0.02) 25%, transparent 25%),
-    linear-gradient(-45deg, rgba(255,255,255,0.02) 25%, transparent 25%);
-  background-size: 8px 8px;
+  background:
+    repeating-conic-gradient(var(--pixel-fleck) 0 25%, transparent 0 50%) 0 0 / 8px 8px,
+    repeating-linear-gradient(0deg, var(--pixel-mortar) 0 2px, transparent 2px 24px),
+    repeating-linear-gradient(90deg, var(--pixel-mortar) 0 2px, transparent 2px 48px);
 }
+:root {
+  --pixel-fleck: color-mix(in oklab, var(--foreground) 4%, transparent);
+  --pixel-mortar: color-mix(in oklab, var(--background) 55%, transparent);
+  --pixel-light: color-mix(in oklab, var(--neon-orange) 16%, transparent);
+  --pixel-steam: color-mix(in oklab, var(--foreground) 65%, transparent);
+}
+.pixel-grain { background-image: repeating-conic-gradient(transparent 0 25%, var(--pixel-mortar) 0 50%); background-size: 4px 4px; }
+.pixel-light {
+  background: repeating-conic-gradient(var(--pixel-light) 0 25%, transparent 0 50%) 0 0 / 8px 8px;
+  clip-path: polygon(42% 0,58% 0,58% 18%,66% 18%,66% 36%,74% 36%,74% 54%,83% 54%,83% 72%,92% 72%,92% 90%,100% 90%,100% 100%,0 100%,0 90%,8% 90%,8% 72%,17% 72%,17% 54%,26% 54%,26% 36%,34% 36%,34% 18%,42% 18%);
+}
+.pixel-steam {
+  background: repeating-conic-gradient(var(--pixel-steam) 0 25%, transparent 0 50%) 0 0 / 4px 4px;
+  clip-path: polygon(30% 10%,70% 10%,70% 30%,90% 30%,90% 70%,70% 70%,70% 90%,20% 90%,20% 70%,0 70%,0 40%,30% 40%);
+  opacity: 0;
+  animation: steam 2.4s steps(8, end) infinite;
+}
+.pixel-heat {
+  background: repeating-linear-gradient(90deg, currentColor 0 2px, transparent 2px 14px) 0 3px / 100% 2px no-repeat;
+  animation: pulse-soft 0.8s steps(2, end) infinite;
+}
+.pixel-meter { background: repeating-linear-gradient(to top, var(--neon-cyan) 0 2px, transparent 2px 4px); height: 100%; }
+.pixel-fill { background: repeating-linear-gradient(90deg, var(--meter-ink, var(--neon-cyan)) 0 5px, transparent 5px 7px); }
+.pixel-flash { background: repeating-conic-gradient(color-mix(in oklab, var(--neon-cyan) 24%, transparent) 0 25%, transparent 0 50%) 0 0 / 12px 12px; }
 
 /* Sharp 8-bit shadow utility */
 .pixel-shadow {
@@ -231,41 +249,33 @@
     0 -2px 0 #000;
 }
 
-.ticker-track { display: inline-flex; gap: 2.5rem; animation: ticker 60s linear infinite; white-space: nowrap; }
+.ticker-track { display: inline-flex; gap: 2.5rem; animation: ticker 60s steps(600, end) infinite; white-space: nowrap; }
 
-.stat-primary { font-family: "Press Start 2P", monospace; font-size: 18px; letter-spacing: 0.04em; }
+.stat-primary { font-family: "Press Start 2P", monospace; font-size: 18px; letter-spacing: 0; }
 .stat-secondary { font-family: "Press Start 2P", monospace; font-size: 12px; }
 .stat-muted { font-family: "VT323", monospace; font-size: 12px; color: var(--muted-foreground); }
 
-.shake { animation: screen-shake 250ms ease; }
-.pulse-num { animation: pulse-num 250ms ease; }
-.server-pulse { animation: server-pulse 1.6s ease-in-out infinite; }
+.shake { animation: screen-shake 250ms steps(1, end); }
+.pulse-num { animation: pulse-num 250ms steps(1, end); }
+.server-pulse { animation: server-pulse 1.6s steps(1, end) infinite; }
 .scan-sweep::after {
-  content: ""; position: absolute; left: 0; right: 0; height: 30%; pointer-events: none;
-  background: linear-gradient(180deg, transparent, color-mix(in oklab, var(--neon-cyan) 22%, transparent), transparent);
-  animation: scan-sweep 6s linear infinite;
+  content: ""; position: absolute; left: 0; right: 0; height: 4px; pointer-events: none;
+  background: repeating-linear-gradient(90deg, color-mix(in oklab, var(--neon-cyan) 20%, transparent) 0 4px, transparent 4px 8px);
+  animation: scan-sweep 6s steps(90, end) infinite;
 }
 
-/* Rarity frames */
-.rarity-Common  { box-shadow: 0 0 0 1px #6c7a8c, inset 0 0 6px rgba(108,122,140,0.3); }
-.rarity-Rare    { box-shadow: 0 0 0 1px var(--neon-blue), inset 0 0 8px color-mix(in oklab, var(--neon-blue) 35%, transparent), 0 0 8px color-mix(in oklab, var(--neon-blue) 50%, transparent); }
-.rarity-Epic    { box-shadow: 0 0 0 1px var(--neon-purple), inset 0 0 10px color-mix(in oklab, var(--neon-purple) 35%, transparent), 0 0 10px color-mix(in oklab, var(--neon-purple) 60%, transparent); }
-.rarity-Legendary { box-shadow: 0 0 0 1px var(--neon-orange), inset 0 0 10px color-mix(in oklab, var(--neon-orange) 35%, transparent), 0 0 14px color-mix(in oklab, var(--neon-orange) 70%, transparent); }
-.rarity-Mythic  {
-  position: relative;
-  box-shadow: 0 0 0 1px var(--neon-cyan), inset 0 0 14px color-mix(in oklab, var(--neon-cyan) 40%, transparent), 0 0 18px color-mix(in oklab, var(--neon-cyan) 80%, transparent);
+/* Tier borders are inset pixels, not blurred outlines. */
+.rarity-Common { --rarity-ink: var(--metal-light); }
+.rarity-Rare { --rarity-ink: var(--neon-blue); }
+.rarity-Epic { --rarity-ink: var(--neon-purple); }
+.rarity-Legendary { --rarity-ink: var(--neon-orange); }
+.rarity-Mythic { --rarity-ink: var(--neon-cyan); }
+:is(.rarity-Common, .rarity-Rare, .rarity-Epic, .rarity-Legendary, .rarity-Mythic) {
+  box-shadow: 0 0 0 1px var(--rarity-ink), 2px 3px 0 color-mix(in oklab, var(--rarity-ink) 35%, transparent);
 }
-.rarity-Mythic::before {
-  content: ""; position: absolute; inset: -2px; pointer-events: none;
-  background: conic-gradient(from 0deg, var(--neon-cyan), var(--neon-purple), var(--neon-orange), var(--neon-green), var(--neon-cyan));
-  filter: blur(4px); opacity: 0.55; z-index: -1;
-  animation: spin-border 4s linear infinite;
+.cable-sway { animation: sway 3s steps(2, end) infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  .pixel-arm + .pixel-arm, .scan-sweep::after, .pixel-flash { display: none; }
 }
-
-.cable-sway { transform-origin: top center; animation: sway 3s ease-in-out infinite; }
-.osc-fan-blade { transform-origin: center; animation: osc-fan 2.4s ease-in-out infinite; }
-
-/* MiningRack helpers */
-@keyframes fan-spin-css { to { transform: rotate(360deg); } }
-.fan-spin > div:first-child { animation: fan-spin-css 1.2s linear infinite; transform-origin: 50% 50%; }
-@keyframes pulse-soft { 0%,100% { opacity: 0.5; } 50% { opacity: 1; } }
