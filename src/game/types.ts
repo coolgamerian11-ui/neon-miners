@@ -12,7 +12,10 @@ export interface GpuModel {
   rarity: "Common" | "Rare" | "Epic" | "Legendary" | "Mythic";
 }
 
-export interface OwnedGpu { id: string; modelId: string; equipped: boolean; }
+export interface OwnedGpu {
+  id: string; modelId: string; equipped: boolean;
+  shelf?: number; slot?: number; damage?: number;
+}
 
 export type GearTier = "basic" | "standard" | "advanced" | "elite" | "mythic";
 
