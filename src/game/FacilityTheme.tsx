@@ -182,10 +182,9 @@ export function FacilityDecor({ facility }: { facility: string }) {
         {/* Vault door silhouette */}
         <div className="absolute bottom-16 left-2 w-24 h-32 pointer-events-none"
           style={{
-            background: "radial-gradient(circle at 50% 40%, #2a1010 32%, #14080a 32% 72%, #08020a 72%)",
+            background: "repeating-conic-gradient(var(--metal-dark) 0 25%, var(--background) 0 50%) 0 0 / 8px 8px",
             border: "2px solid #4a1a1a",
-            
-            boxShadow: "inset 0 0 18px rgba(0,0,0,0.8), 0 0 12px color-mix(in oklab, var(--neon-red) 40%, transparent)",
+            boxShadow: "inset 0 0 0 4px var(--background), 4px 4px 0 var(--pixel-mortar)",
           }}>
           {/* bolts */}
           {[0,1,2,3,4,5,6,7].map(i => {
@@ -203,7 +202,7 @@ export function FacilityDecor({ facility }: { facility: string }) {
             style={{
               background: "linear-gradient(180deg, #5a2020 50%, #2a0a0a 50%)",
               border: "2px solid #7a3030",
-              boxShadow: "inset 0 0 8px rgba(0,0,0,0.8)",
+              boxShadow: "inset 2px 2px 0 var(--background)",
             }}>
             <div className="absolute inset-0  border-t-2 border-[color:var(--neon-red)]"
               style={{ animation: "pulse-soft 2s steps(1, end) infinite" }} />
@@ -211,7 +210,7 @@ export function FacilityDecor({ facility }: { facility: string }) {
         </div>
         {/* Red emergency strobe */}
         <div className="absolute top-2 left-1/2 -translate-x-1/2 w-3 h-3  pointer-events-none flicker"
-          style={{ background: "var(--neon-red)", boxShadow: "0 0 30px var(--neon-red), 0 0 60px var(--neon-red)" }} />
+          style={{ background: "var(--neon-red)", boxShadow: "0 0 0 3px color-mix(in oklab, var(--neon-red) 35%, transparent), 0 0 0 6px color-mix(in oklab, var(--neon-red) 15%, transparent)" }} />
         {/* Caution tape */}
         <div className="absolute top-2 left-0 right-0 h-2 opacity-60 pointer-events-none"
           style={{ background: "repeating-conic-gradient(#d4a020 0 25%, #1a1410 0 50%) 0 0 / 8px 8px" }} />
